@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Drag and Drop Image</title>
+     <link rel="stylesheet" href="assets/styles/styles.css">
+     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+
+<body>
+     <div id="toolbar">
+          <button class="tool-btn" title="Text" data-tooltip="Add Text"><i class="fas fa-font"></i></button>
+          <button class="tool-btn" title="Layers" data-tooltip="Combine"><i class="fas fa-layer-group"></i></button>
+          <button class="tool-btn" title="Crop" data-tooltip="Crop"><i class="fas fa-crop-alt"></i></button>
+          <button class="tool-btn" title="Clone" data-tooltip="Clone"><i class="far fa-clone"></i></button>
+          <button class="tool-btn" title="Move Up" data-tooltip="Move Up"><i class="fas fa-arrow-up"></i></button>
+          <button class="tool-btn" title="Move Down" data-tooltip="Move Down"><i class="fas fa-arrow-down"></i></button>
+          <button class="tool-btn" title="Magic Wand" data-tooltip="Magic Wand"><i
+                    class="fas fa-hat-wizard"></i></button>
+          <button class="tool-btn" title="Save" data-tooltip="Save"><i class="fas fa-save"></i></button>
+          <button class="tool-btn" title="Delete" data-tooltip="Delete"><i class="fas fa-trash"></i></button>
+          <button class="tool-btn" title="Settings" data-tooltip="Settings"><i class="fas fa-cog"></i></button>
+     </div>
+     <div id="drop-area">
+          <p id="drop-text">Drag and drop an image anywhere on the page</p>
+     </div>
+     <script src="scripts/script.js" type="module"></script>
+</body>
+
+</html>
