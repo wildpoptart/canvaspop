@@ -52,7 +52,6 @@ function handleFiles(files, x, y) {
             reader.onloadend = () => {
                 const newImage = new ImageItem(reader.result, x, y);
                 const newZIndex = ImageItem.instances.length + 1;
-                console.log(newZIndex);
                 newImage.setZIndex(newZIndex);
                 ImageItem.instances.push(newImage);
                 hideDropText();
@@ -72,13 +71,20 @@ dropArea.addEventListener('mousedown', handleDropAreaClick);
 dropArea.addEventListener('mouseup', handleDropAreaClick);
 dropArea.addEventListener('click', (e) => {
     if (e.target === dropArea) {
-        ImageItem.deselectAll();    
+        const isAnyCropping = ImageItem.selectedItems.some(item => item.isCropMode);
+        if (!isAnyCropping) {
+            ImageItem.deselectAll();
+        }
     }
 });
 
 function handleDropAreaClick(e) {
     if (e.target === dropArea) {
-        ImageItem.deselectAll();
+        // Check if any selected item is in crop mode
+        const isAnyCropping = ImageItem.selectedItems.some(item => item.isCropMode);
+        if (!isAnyCropping) {
+            ImageItem.deselectAll();
+        }
     }
 }
 

@@ -102,6 +102,7 @@ class ImageItem {
      }
 
      onMouseUp(e) {
+          console.log(this.isCropMode)
           if (!this.isCropMode) {
                this.isDragging = false;
                console.log('Selected items:', ImageItem.selectedItems.length);
@@ -109,7 +110,7 @@ class ImageItem {
      }
 
      onClick(e) {
-          if (!this.isDragging) {
+          if (!this.isDragging && !this.isCropMode) {
                if (e.shiftKey) {
                     this.toggleSelect();
                } else {
