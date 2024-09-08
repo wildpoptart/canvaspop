@@ -177,6 +177,206 @@ class ImageItem {
           this.width = Math.round(window.innerWidth * 0.2);
           this.drawImage();
      }
+
+     initCropMode() {
+          // Store the current selection style
+          this.previousOutline = this.canvas.style.outline;
+          // Temporarily remove the selection border
+          this.canvas.style.outline = 'none';
+
+          this.cropOverlay = document.createElement('div');
+          this.cropOverlay.className = 'crop-overlay';
+          this.cropOverlay.style.position = 'absolute';
+          this.cropOverlay.style.border = '2px dashed #fff';
+          this.cropOverlay.style.boxShadow = '0 0 0 9999px rgba(0, 0, 0, 0.5)';
+          this.cropOverlay.style.cursor = 'move';
+
+          this.cropConfirmBtn = document.createElement('button');
+          this.cropConfirmBtn.textContent = '✓';
+          this.cropConfirmBtn.className = 'crop-confirm-btn';
+          this.cropConfirmBtn.style.position = 'absolute';
+          this.cropConfirmBtn.style.top = '-30px';
+          this.cropConfirmBtn.style.right = '0';
+          this.cropConfirmBtn.addEventListener('click', this.confirmCrop.bind(this));
+
+          this.canvas.parentNode.appendChild(this.cropOverlay);
+          this.canvas.parentNode.appendChild(this.cropConfirmBtn);
+
+          // Align the crop overlay with the image, accounting for the canvas position
+          this.cropOverlay.style.left = `${this.x}px`;
+          this.cropOverlay.style.top = `${this.y}px`;
+          this.cropOverlay.style.width = `${this.width}px`;
+          this.cropOverlay.style.height = `${this.height}px`;
+
+          // Add resize handles
+          const handles = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
+          handles.forEach(position => {
+               const handle = document.createElement('div');
+               handle.className = `crop-handle ${position}`;
+               this.cropOverlay.appendChild(handle);
+          });
+
+          this.addCropEventListeners();
+     }
+
+     addCropEventListeners() {
+          this.cropOverlay.addEventListener('mousedown', this.onCropMouseDown.bind(this));
+          document.addEventListener('mousemove', this.onCropMouseMove.bind(this));
+          document.addEventListener('mouseup', this.onCropMouseUp.bind(this));
+
+          // Add listeners for resize handles
+          const handles = this.cropOverlay.querySelectorAll('.crop-handle');
+          handles.forEach(handle => {
+               handle.addEventListener('mousedown', this.onResizeStart.bind(this));
+          });
+     }
+
+     onCropMouseDown(e) {
+          this.isCropDragging = true;
+          this.cropDragStartX = e.clientX - this.cropOverlay.offsetLeft;
+          this.cropDragStartY = e.clientY - this.cropOverlay.offsetTop;
+     }
+
+     onCropMouseMove(e) {
+          if (this.isCropDragging) {
+               const newLeft = e.clientX - this.cropDragStartX;
+               const newTop = e.clientY - this.cropDragStartY;
+               
+               this.cropOverlay.style.left = `${Math.max(this.x, Math.min(newLeft, this.x + this.width - parseInt(this.cropOverlay.style.width)))}px`;
+               this.cropOverlay.style.top = `${Math.max(this.y, Math.min(newTop, this.y + this.height - parseInt(this.cropOverlay.style.height)))}px`;
+          } else if (this.isResizing) {
+               const deltaX = e.clientX - this.resizeStartX;
+               const deltaY = e.clientY - this.resizeStartY;
+
+               let newWidth = this.resizeStartWidth;
+               let newHeight = this.resizeStartHeight;
+               let newLeft = this.cropOverlay.offsetLeft;
+               let newTop = this.cropOverlay.offsetTop;
+
+               switch (this.resizeHandle) {
+                    case 'n':
+                         newHeight -= deltaY;
+                         newTop += deltaY;
+                         break;
+                    case 's':
+                         newHeight += deltaY;
+                         break;
+                    case 'e':
+                         newWidth += deltaX;
+                         break;
+                    case 'w':
+                         newWidth -= deltaX;
+                         newLeft += deltaX;
+                         break;
+                    case 'ne':
+                         newWidth += deltaX;
+                         newHeight -= deltaY;
+                         newTop += deltaY;
+                         break;
+                    case 'nw':
+                         newWidth -= deltaX;
+                         newHeight -= deltaY;
+                         newLeft += deltaX;
+                         newTop += deltaY;
+                         break;
+                    case 'se':
+                         newWidth += deltaX;
+                         newHeight += deltaY;
+                         break;
+                    case 'sw':
+                         newWidth -= deltaX;
+                         newHeight += deltaY;
+                         newLeft += deltaX;
+                         break;
+               }
+
+               // Apply constraints
+               newWidth = Math.max(20, Math.min(newWidth, this.x + this.width - newLeft));
+               newHeight = Math.max(20, Math.min(newHeight, this.y + this.height - newTop));
+               newLeft = Math.max(this.x, Math.min(newLeft, this.x + this.width - 20));
+               newTop = Math.max(this.y, Math.min(newTop, this.y + this.height - 20));
+
+               // Ensure the crop overlay doesn't exceed image boundaries
+               if (newLeft + newWidth > this.x + this.width) {
+                    newWidth = this.x + this.width - newLeft;
+               }
+               if (newTop + newHeight > this.y + this.height) {
+                    newHeight = this.y + this.height - newTop;
+               }
+
+               // Update crop overlay size and position
+               this.cropOverlay.style.width = `${newWidth}px`;
+               this.cropOverlay.style.height = `${newHeight}px`;
+               this.cropOverlay.style.left = `${newLeft}px`;
+               this.cropOverlay.style.top = `${newTop}px`;
+          }
+     }
+
+     onCropMouseUp() {
+          this.isCropDragging = false;
+          this.isResizing = false;
+     }
+
+     onResizeStart(e) {
+          this.isResizing = true;
+          this.resizeHandle = e.target.className.split(' ')[1]; // Get handle position (nw, ne, sw, se)
+          this.resizeStartX = e.clientX;
+          this.resizeStartY = e.clientY;
+          this.resizeStartWidth = parseInt(this.cropOverlay.style.width);
+          this.resizeStartHeight = parseInt(this.cropOverlay.style.height);
+          e.stopPropagation();
+     }
+
+     confirmCrop() {
+          const cropX = this.cropOverlay.offsetLeft - this.x;
+          const cropY = this.cropOverlay.offsetTop - this.y;
+          const cropWidth = parseInt(this.cropOverlay.style.width);
+          const cropHeight = parseInt(this.cropOverlay.style.height);
+
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = cropWidth;
+          tempCanvas.height = cropHeight;
+          const tempCtx = tempCanvas.getContext('2d');
+
+          tempCtx.drawImage(
+               this.canvas,
+               cropX, cropY, cropWidth, cropHeight,
+               0, 0, cropWidth, cropHeight
+          );
+
+          this.width = cropWidth;
+          this.height = cropHeight;
+          this.canvas.width = cropWidth;
+          this.canvas.height = cropHeight;
+          const ctx = this.canvas.getContext('2d');
+          ctx.drawImage(tempCanvas, 0, 0);
+
+          this.exitCropMode();
+          this.updatePosition();
+          this.restoreSelectionStyle();
+     }
+
+     exitCropMode() {
+          if (this.cropOverlay) {
+               this.cropOverlay.remove();
+               this.cropOverlay = null;
+          }
+          if (this.cropConfirmBtn) {
+               this.cropConfirmBtn.remove();
+               this.cropConfirmBtn = null;
+          }
+          this.restoreSelectionStyle();
+     }
+
+     restoreSelectionStyle() {
+          // Restore the previous selection style
+          if (this.previousOutline !== undefined) {
+               this.canvas.style.outline = this.previousOutline;
+               this.previousOutline = undefined;
+          }
+     }
+
+     // ... existing code ...
 }
 
 ImageItem.selectedItems = [];

@@ -112,5 +112,14 @@ function adjustZIndex(delta) {
     ImageItem.updateAllZIndices();
 }
 
+// Add crop functionality
+const cropBtn = document.querySelector('.tool-btn[title="Crop"]');
+cropBtn.addEventListener('click', () => {
+    const selectedItem = ImageItem.selectedItems[0];
+    if (selectedItem) {
+        selectedItem.initCropMode();
+    }
+});
+
 // Export the images array if needed in other parts of your application
 export { images };

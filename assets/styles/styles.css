@@ -120,3 +120,59 @@ body {
     position: relative;
     top: -50px;
 }
+
+.crop-overlay {
+    position: absolute;
+    border: 2px dashed #fff;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+    cursor: move;
+}
+
+.crop-handle {
+    position: absolute;
+    background-color: #fff;
+    border: 1px solid #000;
+}
+
+.crop-handle.nw, .crop-handle.se, .crop-handle.ne, .crop-handle.sw {
+    width: 10px;
+    height: 10px;
+}
+
+.crop-handle.n, .crop-handle.s {
+    width: 10px;
+    height: 10px;
+    left: calc(50% - 10px);
+}
+
+.crop-handle.e, .crop-handle.w {
+    width: 10px;
+    height: 10px;
+    top: calc(50% - 10px);
+}
+
+.crop-handle.nw { top: -7.5px; left: -7.5px; cursor: nw-resize; }
+.crop-handle.n { top: -7.5px; cursor: n-resize; }
+.crop-handle.ne { top: -7.5px; right: -7.5px; cursor: ne-resize; }
+.crop-handle.e { right: -7.5px; cursor: e-resize; }
+.crop-handle.se { bottom: -7.5px; right: -7.5px; cursor: se-resize; }
+.crop-handle.s { bottom: -7.5px; cursor: s-resize; }
+.crop-handle.sw { bottom: -7.5px; left: -7.5px; cursor: sw-resize; }
+.crop-handle.w { left: -7.5px; cursor: w-resize; }
+
+.crop-confirm-btn {
+    position: absolute;
+    top: -30px;
+    right: 0;
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 50%;
+}
