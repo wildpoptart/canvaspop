@@ -51,6 +51,9 @@ function handleFiles(files, x, y) {
             reader.readAsDataURL(file);
             reader.onloadend = () => {
                 const newImage = new ImageItem(reader.result, x, y);
+                const newZIndex = ImageItem.instances.length + 1;
+                console.log(newZIndex);
+                newImage.setZIndex(newZIndex);
                 ImageItem.instances.push(newImage);
                 hideDropText();
             };
@@ -81,10 +84,8 @@ function handleDropAreaClick(e) {
 
 // Resize drop area to window size
 function resizeDropArea() {
-    const toolbarContainer = document.getElementById('toolbar-container');
-    const toolbarHeight = toolbarContainer.offsetHeight;
     dropArea.style.width = `${window.innerWidth}px`;
-    dropArea.style.height = `${window.innerHeight - 45}px`;
+    dropArea.style.height = `${window.innerHeight}px`;
     dropArea.style.top = `${45}px`;
     console.log(dropArea.style.height);
 }

@@ -10,21 +10,21 @@ class ImageItem {
           this.dragOffsetY = 0;
           this.x = x - this.width / 2;  // Adjust x to center the image
           this.y = y - this.height / 2;  // Adjust y to center the image
-          this.zIndex = 0;  // Initialize zIndex
+          this.zIndex = 0;  // Initialize zIndex to 0
           this.addEventListeners();
-          this.setZIndex(ImageItem.getMaxZIndex() + 1);
+          this.setZIndex(ImageItem.instances.length + 1);
           this.isCropMode = false;
      }
 
      static getMaxZIndex() {
-          const maxZIndex = Math.max(0, ...ImageItem.instances.map(item => item.zIndex));
+          const maxZIndex = ImageItem.instances.length;
           console.log(`Max z-index: ${maxZIndex}`);
           return maxZIndex;
      }
 
      setZIndex(newZIndex) {
           const oldZIndex = this.zIndex;
-          this.zIndex = Math.max(0, Math.min(newZIndex, ImageItem.instances.length - 1));
+          this.zIndex = Math.max(0, Math.min(newZIndex, ImageItem.instances.length));
           this.canvas.style.zIndex = this.zIndex;
           this.swapZIndex(oldZIndex, this.zIndex);
           ImageItem.updateAllZIndices();
