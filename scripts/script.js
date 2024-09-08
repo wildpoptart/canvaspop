@@ -125,6 +125,16 @@ cropBtn.addEventListener('click', () => {
     }
 });
 
+// Add event listener for exiting crop mode
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const selectedItem = ImageItem.selectedItems[0];
+        if (selectedItem && selectedItem.cropOverlay) {
+            selectedItem.exitCropMode();
+        }
+    }
+});
+
 // Add clone functionality
 const cloneBtn = document.querySelector('#secondary-toolbar .tool-btn[title="Clone"]');
 cloneBtn.addEventListener('click', () => {

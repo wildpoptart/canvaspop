@@ -13,6 +13,7 @@ class ImageItem {
           this.zIndex = 0;  // Initialize zIndex
           this.addEventListeners();
           this.setZIndex(ImageItem.getMaxZIndex() + 1);
+          this.isCropMode = false;
      }
 
      static getMaxZIndex() {
@@ -83,14 +84,16 @@ class ImageItem {
      }
 
      onMouseDown(e) {
-          this.isDragging = true;
-          this.dragOffsetX = e.clientX - this.x;
-          this.dragOffsetY = e.clientY - this.y;
-          e.preventDefault();
+          if (!this.isCropMode) {
+               this.isDragging = true;
+               this.dragOffsetX = e.clientX - this.x;
+               this.dragOffsetY = e.clientY - this.y;
+               e.preventDefault();
+          }
      }
 
      onMouseMove(e) {
-          if (this.isDragging) {
+          if (this.isDragging && !this.isCropMode) {
                const dropArea = document.getElementById('drop-area');
                this.x = Math.max(0, Math.min(e.clientX - this.dragOffsetX, dropArea.clientWidth - this.width));
                this.y = Math.max(0, Math.min(e.clientY - this.dragOffsetY, dropArea.clientHeight - this.height));
@@ -98,8 +101,11 @@ class ImageItem {
           }
      }
 
-     onMouseUp() {
-          this.isDragging = false;
+     onMouseUp(e) {
+          if (!this.isCropMode) {
+               this.isDragging = false;
+               console.log('Selected items:', ImageItem.selectedItems.length);
+          }
      }
 
      onClick(e) {
@@ -184,6 +190,7 @@ class ImageItem {
      }
 
      initCropMode() {
+          this.isCropMode = true;
           // Store the current selection style
           this.previousOutline = this.canvas.style.outline;
           // Temporarily remove the selection border
@@ -196,16 +203,15 @@ class ImageItem {
           this.cropOverlay.style.boxShadow = '0 0 0 9999px rgba(0, 0, 0, 0.5)';
           this.cropOverlay.style.cursor = 'move';
 
-          this.cropConfirmBtn = document.createElement('button');
-          this.cropConfirmBtn.textContent = '✓';
-          this.cropConfirmBtn.className = 'crop-confirm-btn';
-          this.cropConfirmBtn.style.position = 'absolute';
-          this.cropConfirmBtn.style.top = '-30px';
-          this.cropConfirmBtn.style.right = '0';
-          this.cropConfirmBtn.addEventListener('click', this.confirmCrop.bind(this));
+          const cropConfirmBtn = document.getElementById('crop-confirm-btn');
+          cropConfirmBtn.style.display = 'inline-block';
+          cropConfirmBtn.onclick = this.confirmCrop.bind(this);
+
+          const cropCancelBtn = document.getElementById('crop-cancel-btn');
+          cropCancelBtn.style.display = 'inline-block';
+          cropCancelBtn.onclick = this.exitCropMode.bind(this);
 
           this.canvas.parentNode.appendChild(this.cropOverlay);
-          this.canvas.parentNode.appendChild(this.cropConfirmBtn);
 
           // Align the crop overlay with the image, accounting for the canvas position
           this.cropOverlay.style.left = `${this.x}px`;
@@ -222,6 +228,32 @@ class ImageItem {
           });
 
           this.addCropEventListeners();
+
+          this.cropOverlay.addEventListener('mousedown', (e) => {
+               e.stopPropagation();
+          });
+
+          this.cropOverlay.addEventListener('click', (e) => {
+               e.stopPropagation();
+          });
+
+          // Show only the crop confirm and cancel buttons, hide others
+          const secondaryToolbar = document.getElementById('secondary-toolbar');
+          Array.from(secondaryToolbar.children).forEach(button => {
+               if (button.id === 'crop-confirm-btn' || button.id === 'crop-cancel-btn') {
+                    button.style.display = 'inline-block';
+               } else {
+                    button.style.display = 'none';
+               }
+          });
+
+          // Add event listener for Enter key
+          this.confirmCropOnEnter = (e) => {
+               if (e.key === 'Enter') {
+                    this.confirmCrop();
+               }
+          };
+          document.addEventListener('keydown', this.confirmCropOnEnter);
      }
 
      addCropEventListeners() {
@@ -232,11 +264,15 @@ class ImageItem {
           // Add listeners for resize handles
           const handles = this.cropOverlay.querySelectorAll('.crop-handle');
           handles.forEach(handle => {
-               handle.addEventListener('mousedown', this.onResizeStart.bind(this));
+               handle.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    this.onResizeStart(e);
+               });
           });
      }
 
      onCropMouseDown(e) {
+          e.stopPropagation();
           this.isCropDragging = true;
           this.cropDragStartX = e.clientX - this.cropOverlay.offsetLeft;
           this.cropDragStartY = e.clientY - this.cropOverlay.offsetTop;
@@ -317,7 +353,8 @@ class ImageItem {
           }
      }
 
-     onCropMouseUp() {
+     onCropMouseUp(e) {
+          e.stopPropagation();
           this.isCropDragging = false;
           this.isResizing = false;
      }
@@ -362,14 +399,25 @@ class ImageItem {
      }
 
      exitCropMode() {
+          this.isCropMode = false;
           if (this.cropOverlay) {
                this.cropOverlay.remove();
                this.cropOverlay = null;
           }
-          if (this.cropConfirmBtn) {
-               this.cropConfirmBtn.remove();
-               this.cropConfirmBtn = null;
-          }
+          
+          // Restore all buttons in the secondary toolbar except crop confirm and cancel
+          const secondaryToolbar = document.getElementById('secondary-toolbar');
+          Array.from(secondaryToolbar.children).forEach(button => {
+               if (button.id === 'crop-confirm-btn' || button.id === 'crop-cancel-btn') {
+                    button.style.display = 'none';
+               } else {
+                    button.style.display = 'inline-block';
+               }
+          });
+
+          // Remove the Enter key event listener
+          document.removeEventListener('keydown', this.confirmCropOnEnter);
+
           this.restoreSelectionStyle();
      }
 
