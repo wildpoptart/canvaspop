@@ -81,22 +81,25 @@ function handleDropAreaClick(e) {
 
 // Resize drop area to window size
 function resizeDropArea() {
-    const toolbar = document.getElementById('toolbar');
-    const toolbarHeight = toolbar.offsetHeight;
+    const toolbarContainer = document.getElementById('toolbar-container');
+    const toolbarHeight = toolbarContainer.offsetHeight;
     dropArea.style.width = `${window.innerWidth}px`;
-    dropArea.style.height = `${window.innerHeight - toolbarHeight}px`;
+    dropArea.style.height = `${window.innerHeight - 45}px`;
+    dropArea.style.top = `${45}px`;
+    console.log(dropArea.style.height);
 }
 
+// Make sure to call this function on window resize and initial load
 window.addEventListener('resize', resizeDropArea);
 resizeDropArea(); // Initial call to set the size
 
 window.addEventListener('resize', () => {
-    images.forEach(image => image.resize());
+    ImageItem.instances.forEach(image => image.resize());
 });
 
-// Add these lines after your existing event listeners
-const moveUpBtn = document.querySelector('.tool-btn[title="Move Up"]');
-const moveDownBtn = document.querySelector('.tool-btn[title="Move Down"]');
+// Update these lines to match the new HTML structure
+const moveUpBtn = document.querySelector('#secondary-toolbar .tool-btn[title="Move Up"]');
+const moveDownBtn = document.querySelector('#secondary-toolbar .tool-btn[title="Move Down"]');
 
 moveUpBtn.addEventListener('click', () => adjustZIndex(1));
 moveDownBtn.addEventListener('click', () => adjustZIndex(-1));
@@ -113,13 +116,42 @@ function adjustZIndex(delta) {
 }
 
 // Add crop functionality
-const cropBtn = document.querySelector('.tool-btn[title="Crop"]');
+const cropBtn = document.querySelector('#secondary-toolbar .tool-btn[title="Crop"]');
 cropBtn.addEventListener('click', () => {
+    console.log('Crop button clicked');
     const selectedItem = ImageItem.selectedItems[0];
     if (selectedItem) {
         selectedItem.initCropMode();
     }
 });
 
+// Add clone functionality
+const cloneBtn = document.querySelector('#secondary-toolbar .tool-btn[title="Clone"]');
+cloneBtn.addEventListener('click', () => {
+    console.log('Clone button clicked');
+    const selectedItem = ImageItem.selectedItems[0];
+    if (selectedItem) {
+        // Implement clone functionality here
+        console.log('Cloning not implemented yet');
+    }
+});
+
+// Add magic wand functionality
+const magicWandBtn = document.querySelector('#secondary-toolbar .tool-btn[title="Magic Wand"]');
+magicWandBtn.addEventListener('click', () => {
+    console.log('Magic Wand button clicked');
+    const selectedItem = ImageItem.selectedItems[0];
+    if (selectedItem) {
+        // Implement magic wand functionality here
+        console.log('Magic Wand not implemented yet');
+    }
+});
+
 // Export the images array if needed in other parts of your application
 export { images };
+
+document.addEventListener('DOMContentLoaded', () => {
+    // ... (other initialization code)
+
+    resizeDropArea();
+});

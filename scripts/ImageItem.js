@@ -126,6 +126,7 @@ class ImageItem {
           if (!ImageItem.selectedItems.includes(this)) {
                ImageItem.selectedItems.push(this);
           }
+          ImageItem.showSecondaryToolbar();
           console.log('Selected items:', ImageItem.selectedItems.length);
      }
 
@@ -135,6 +136,9 @@ class ImageItem {
           const index = ImageItem.selectedItems.indexOf(this);
           if (index > -1) {
                ImageItem.selectedItems.splice(index, 1);
+          }
+          if (ImageItem.selectedItems.length === 0) {
+               ImageItem.hideSecondaryToolbar();
           }
           console.log('Selected items:', ImageItem.selectedItems.length);
      }
@@ -150,6 +154,7 @@ class ImageItem {
      static deselectAll() {
           ImageItem.selectedItems.forEach(item => item.deselect());
           ImageItem.selectedItems = [];
+          ImageItem.hideSecondaryToolbar();
      }
 
      updateSelectionStyle() {
@@ -376,7 +381,23 @@ class ImageItem {
           }
      }
 
-     // ... existing code ...
+     static showSecondaryToolbar() {
+          const mainToolbar = document.getElementById('main-toolbar');
+          const secondaryToolbar = document.getElementById('secondary-toolbar');
+          mainToolbar.style.opacity = '0';
+          mainToolbar.style.visibility = 'hidden';
+          mainToolbar.style.pointerEvents = 'none';
+          secondaryToolbar.classList.add('visible');
+     }
+
+     static hideSecondaryToolbar() {
+          const mainToolbar = document.getElementById('main-toolbar');
+          const secondaryToolbar = document.getElementById('secondary-toolbar');
+          mainToolbar.style.opacity = '1';
+          mainToolbar.style.visibility = 'visible';
+          mainToolbar.style.pointerEvents = 'auto';
+          secondaryToolbar.classList.remove('visible');
+     }
 }
 
 ImageItem.selectedItems = [];

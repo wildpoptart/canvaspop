@@ -176,3 +176,125 @@ body {
     cursor: pointer;
     border-radius: 50%;
 }
+
+#secondary-toolbar {
+    background-color: var(--toolbar-bg);
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#secondary-toolbar.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#secondary-toolbar .tool-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.2em;
+    margin: 0 10px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    position: relative;
+}
+
+#secondary-toolbar .tool-btn::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--toolbar-bg);
+    color: var(--text-color);
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+#secondary-toolbar .tool-btn:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+#secondary-toolbar .tool-btn::before {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent var(--toolbar-bg) transparent;
+    opacity: 0;
+    visibility: hidden;
+}
+
+#secondary-toolbar .tool-btn:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+
+#secondary-toolbar .tool-btn:hover {
+    color: var(--highlight-color);
+}
+
+#secondary-toolbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    opacity: 0;
+    visibility: hidden;
+}
+
+#secondary-toolbar.visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+#toolbar-container {
+    position: relative;
+    background-color: var(--toolbar-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+#main-toolbar,
+#secondary-toolbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--toolbar-bg);
+}
+
+#main-toolbar {
+    z-index: 1;
+}
+
+#secondary-toolbar {
+    z-index: 2;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+#secondary-toolbar.visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+/* Update the showSecondaryToolbar and hideSecondaryToolbar methods in ImageItem.js */
