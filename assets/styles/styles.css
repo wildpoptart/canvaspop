@@ -265,6 +265,7 @@ body {
     position: relative;
     background-color: var(--toolbar-bg);
     border-bottom: 1px solid var(--border-color);
+    z-index: 9999; /* Add this line to set a very high z-index */
 }
 
 #main-toolbar,

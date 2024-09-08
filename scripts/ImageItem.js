@@ -26,6 +26,9 @@ class ImageItem {
           const oldZIndex = this.zIndex;
           this.zIndex = Math.max(0, Math.min(newZIndex, ImageItem.instances.length));
           this.canvas.style.zIndex = this.zIndex;
+          if (this.cropOverlay) {
+               this.cropOverlay.style.zIndex = this.zIndex;
+          }
           this.swapZIndex(oldZIndex, this.zIndex);
           ImageItem.updateAllZIndices();
      }
@@ -84,7 +87,7 @@ class ImageItem {
      }
 
      onMouseDown(e) {
-          if (!this.isCropMode) {
+          if (!this.isCropMode && !ImageItem.isCroppingActive) {
                this.isDragging = true;
                this.dragOffsetX = e.clientX - this.x;
                this.dragOffsetY = e.clientY - this.y;
@@ -110,7 +113,7 @@ class ImageItem {
      }
 
      onClick(e) {
-          if (!this.isDragging && !this.isCropMode) {
+          if (!this.isDragging && !ImageItem.isCroppingActive && !this.isCropMode) {
                if (e.shiftKey) {
                     this.toggleSelect();
                } else {
@@ -159,9 +162,11 @@ class ImageItem {
      }
 
      static deselectAll() {
-          ImageItem.selectedItems.forEach(item => item.deselect());
-          ImageItem.selectedItems = [];
-          ImageItem.hideSecondaryToolbar();
+          if (!ImageItem.isCroppingActive) {
+               ImageItem.selectedItems.forEach(item => item.deselect());
+               ImageItem.selectedItems = [];
+               ImageItem.hideSecondaryToolbar();
+          }
      }
 
      updateSelectionStyle() {
@@ -191,7 +196,16 @@ class ImageItem {
      }
 
      initCropMode() {
+          ImageItem.isCroppingActive = true;
           this.isCropMode = true;
+          
+          // Store the current z-index
+          this.originalZIndex = this.zIndex;
+          
+          // Set a high z-index for the image and crop overlay
+          const highZIndex = ImageItem.instances.length + 1;
+          this.setZIndex(highZIndex);
+
           // Store the current selection style
           this.previousOutline = this.canvas.style.outline;
           // Temporarily remove the selection border
@@ -203,6 +217,8 @@ class ImageItem {
           this.cropOverlay.style.border = '2px dashed #fff';
           this.cropOverlay.style.boxShadow = '0 0 0 9999px rgba(0, 0, 0, 0.5)';
           this.cropOverlay.style.cursor = 'move';
+          // Set the z-index of the crop overlay to be the same as the image
+          this.cropOverlay.style.zIndex = highZIndex;
 
           const cropConfirmBtn = document.getElementById('crop-confirm-btn');
           cropConfirmBtn.style.display = 'inline-block';
@@ -215,8 +231,8 @@ class ImageItem {
           this.canvas.parentNode.appendChild(this.cropOverlay);
 
           // Align the crop overlay with the image, accounting for the canvas position
-          this.cropOverlay.style.left = `${this.x}px`;
-          this.cropOverlay.style.top = `${this.y}px`;
+          this.cropOverlay.style.left = `${this.x-1}px`;
+          this.cropOverlay.style.top = `${this.y-1}px`;
           this.cropOverlay.style.width = `${this.width}px`;
           this.cropOverlay.style.height = `${this.height}px`;
 
@@ -400,6 +416,7 @@ class ImageItem {
      }
 
      exitCropMode() {
+          ImageItem.isCroppingActive = false;
           this.isCropMode = false;
           if (this.cropOverlay) {
                this.cropOverlay.remove();
@@ -418,6 +435,9 @@ class ImageItem {
 
           // Remove the Enter key event listener
           document.removeEventListener('keydown', this.confirmCropOnEnter);
+
+          // Restore the original z-index
+          this.setZIndex(this.originalZIndex);
 
           this.restoreSelectionStyle();
      }
@@ -451,5 +471,6 @@ class ImageItem {
 
 ImageItem.selectedItems = [];
 ImageItem.instances = [];
+ImageItem.isCroppingActive = false;
 
 export default ImageItem;

@@ -70,21 +70,14 @@ function hideDropText() {
 dropArea.addEventListener('mousedown', handleDropAreaClick);
 dropArea.addEventListener('mouseup', handleDropAreaClick);
 dropArea.addEventListener('click', (e) => {
-    if (e.target === dropArea) {
-        const isAnyCropping = ImageItem.selectedItems.some(item => item.isCropMode);
-        if (!isAnyCropping) {
-            ImageItem.deselectAll();
-        }
+    if (e.target === dropArea && !ImageItem.isCroppingActive) {
+        ImageItem.deselectAll();
     }
 });
 
 function handleDropAreaClick(e) {
-    if (e.target === dropArea) {
-        // Check if any selected item is in crop mode
-        const isAnyCropping = ImageItem.selectedItems.some(item => item.isCropMode);
-        if (!isAnyCropping) {
-            ImageItem.deselectAll();
-        }
+    if (e.target === dropArea && !ImageItem.isCroppingActive) {
+        ImageItem.deselectAll();
     }
 }
 
