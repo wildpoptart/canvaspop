@@ -35,7 +35,6 @@ body {
     font-size: 1.2em;
     margin: 0 10px;
     cursor: pointer;
-    transition: color 0.3s ease;
     position: relative;
 }
 
@@ -53,7 +52,6 @@ body {
     white-space: nowrap;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s;
     pointer-events: none;
     z-index: 1000;
 }
@@ -75,7 +73,6 @@ body {
     border-color: transparent transparent var(--toolbar-bg) transparent;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s;
 }
 
 .tool-btn:hover::before {
@@ -197,7 +194,6 @@ body {
     font-size: 1.2em;
     margin: 0 10px;
     cursor: pointer;
-    transition: color 0.3s ease;
     position: relative;
 }
 
