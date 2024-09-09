@@ -7,6 +7,16 @@ const dropText = document.getElementById('drop-text');
 
 let images = [];
 
+// Add these variables at the top of the file
+let zoomLevel = 1;
+const ZOOM_SPEED = 0.1;
+const MIN_ZOOM = 0.1;
+const MAX_ZOOM = 5;
+
+// Add these variables at the top of the file
+let isDraggingDropArea = false;
+let dragStartX, dragStartY;
+
 // Prevent default drag behaviors
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
     body.addEventListener(eventName, preventDefaults, false);
@@ -74,20 +84,44 @@ function hideDropText() {
     }
 }
 
-// Add event listeners to drop area to deselect all images when clicking outside
-dropArea.addEventListener('mousedown', handleDropAreaClick);
-dropArea.addEventListener('mouseup', handleDropAreaClick);
-dropArea.addEventListener('click', (e) => {
-    if (e.target === dropArea && !ImageItem.isCroppingActive) {
-        ImageItem.deselectAll();
-    }
-});
-
+// Modify the handleDropAreaClick function
 function handleDropAreaClick(e) {
     if (e.target === dropArea && !ImageItem.isCroppingActive) {
+        if (e.type === 'mousedown') {
+            isDraggingDropArea = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+        } else if (e.type === 'mouseup') {
+            isDraggingDropArea = false;
+        }
         ImageItem.deselectAll();
     }
 }
+
+// Add this new function to handle drop area dragging
+function handleDropAreaDrag(e) {
+    if (isDraggingDropArea) {
+        const deltaX = (e.clientX - dragStartX);
+        const deltaY = (e.clientY - dragStartY);
+
+        ImageItem.instances.forEach(item => {
+            item.x += deltaX;
+            item.y += deltaY;
+            item.updatePosition();
+        });
+
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+    }
+}
+
+// Add event listeners to drop area to deselect all images when clicking outside
+dropArea.addEventListener('mousedown', handleDropAreaClick);
+dropArea.addEventListener('mouseup', handleDropAreaClick);
+dropArea.addEventListener('mousemove', handleDropAreaDrag);
+document.addEventListener('mouseup', () => {
+    isDraggingDropArea = false;
+});
 
 // Resize drop area to window size
 function resizeDropArea() {
@@ -96,6 +130,11 @@ function resizeDropArea() {
     dropArea.style.width = `${window.innerWidth}px`;
     dropArea.style.height = `${window.innerHeight - toolbarHeight}px`;
     dropArea.style.top = `${toolbarHeight}px`;
+    
+    // Don't reset zoom level here, just update positions
+    ImageItem.instances.forEach(item => {
+        item.updatePosition();
+    });
 }
 
 // Make sure to call this function on window resize and initial load
@@ -230,7 +269,7 @@ const collageBtn = document.querySelector('#toolbar-container .tool-btn[title="O
 // Add this with the other button event listeners
 collageBtn.addEventListener('click', () => {
     console.log('Collage button clicked');
-    organizeCollage(Array.from(ImageItem.instances).map(item => item.canvas));
+    organizeCollage(ImageItem.instances);
 });
 
 // Export the images array if needed in other parts of your application
@@ -241,3 +280,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     resizeDropArea();
 });
+
+// Add this function to handle zooming
+// add zoomlevel to the function
+        
+function handleZoom(e) {
+    e.preventDefault();
+    const delta = e.deltaY;
+    if (delta > 0) {
+        zoomLevel -= ZOOM_SPEED;
+    } else {
+        zoomLevel += ZOOM_SPEED;
+    }
+    zoomLevel = Math.max(MIN_ZOOM, Math.min(zoomLevel, MAX_ZOOM));
+    ImageItem.instances.forEach(item => {
+        item.updatePosition();
+        //update size of item relative to the mouse position
+        item.updateSizeNoResize(zoomLevel);
+    });
+}
+
+// Add wheel event listener to the drop area
+dropArea.addEventListener('wheel', handleZoom, { passive: false });
+
+// Remove the handleDrag function as it's not needed anymore

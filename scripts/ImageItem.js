@@ -22,6 +22,8 @@ class ImageItem {
           this.isCropDragging = false;
           this.isResizing = false;
           this.isCropResizing = false;  // Add this new variable
+          this.originalWidth = this.width;
+          this.originalHeight = this.height;
      }
 
      static getMaxZIndex() {
@@ -72,6 +74,7 @@ class ImageItem {
      drawImage() {
           const aspectRatio = this.originalImage.width / this.originalImage.height;
           this.height = Math.round(this.width / aspectRatio);
+          this.originalHeight = Math.round(this.originalWidth / aspectRatio);
 
           this.canvas.width = this.width;
           this.canvas.height = this.height;
@@ -667,6 +670,43 @@ class ImageItem {
           this.resizeOverlay.style.width = `${newWidth}px`;
           this.resizeOverlay.style.height = `${newHeight}px`;
      }
+
+     updateSizeNoResize(zoomLevel) {
+          console.log('updateSizeNoResize', zoomLevel);
+      
+          // Calculate new dimensions
+          const newWidth = Math.max(20, Math.min(this.originalWidth * zoomLevel, window.innerWidth));
+          const newHeight = Math.max(20, Math.min(this.originalHeight * zoomLevel, window.innerHeight));
+      
+          // Update image size
+          this.width = newWidth;
+          this.height = newHeight;
+          this.canvas.width = this.width;
+          this.canvas.height = this.height;
+      
+          // Redraw the image at the new size
+          const ctx = this.canvas.getContext('2d');
+          ctx.drawImage(this.originalImage, 0, 0, this.width, this.height);
+      
+          // Update position to keep the image centered
+          this.x += (this.width - newWidth) / 2;
+          this.y += (this.height - newHeight) / 2;
+      
+          // Update canvas and resize overlay (if it exists)
+          this.updatePosition();
+          if (this.resizeOverlay) {
+              this.resizeOverlay.style.width = `${this.width}px`;
+              this.resizeOverlay.style.height = `${this.height}px`;
+          }
+      
+          // Update all other instances with resize overlays
+          ImageItem.instances.forEach(item => {
+              if (item !== this && item.resizeOverlay) {
+                  item.resizeOverlay.style.width = `${item.width}px`;
+                  item.resizeOverlay.style.height = `${item.height}px`;
+              }
+          });
+      }
 
      exitResizeMode() {
           this.isResizeMode = false;
