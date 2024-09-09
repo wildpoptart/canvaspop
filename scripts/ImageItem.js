@@ -550,6 +550,8 @@ class ImageItem {
           
           this.canvas.parentNode.appendChild(this.resizeOverlay);
           this.addResizeEventListeners();
+
+          this.resizeOverlay.addEventListener('wheel', this.handleOverlayScroll.bind(this), { passive: false });
      }
 
      addResizeEventListeners() {
@@ -665,6 +667,46 @@ class ImageItem {
                this.resizeOverlay.remove();
                this.resizeOverlay = null;
           }
+     }
+
+     handleOverlayScroll(e) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const rect = this.resizeOverlay.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          // Calculate the relative position of the mouse on the image
+          const relativeX = mouseX / this.width;
+          const relativeY = mouseY / this.height;
+
+          // Determine the scale factor based on scroll direction
+          const scaleFactor = e.deltaY > 0 ? 0.95 : 1.05;
+
+          // Calculate new dimensions
+          const newWidth = Math.max(20, Math.min(this.width * scaleFactor, window.innerWidth));
+          const newHeight = Math.max(20, Math.min(this.height * scaleFactor, window.innerHeight));
+
+          // Calculate the new position to keep the mouse point in the same relative position
+          const newX = this.x - (newWidth - this.width) * relativeX;
+          const newY = this.y - (newHeight - this.height) * relativeY;
+
+          // Update image size and position
+          this.updateSize(newWidth, newHeight);
+          this.x = newX;
+          this.y = newY;
+          this.updatePosition();
+
+          // Redraw the image at the new size
+          const ctx = this.canvas.getContext('2d');
+          ctx.drawImage(this.originalImage, 0, 0, newWidth, newHeight);
+
+          // Update resize overlay
+          this.resizeOverlay.style.width = `${newWidth}px`;
+          this.resizeOverlay.style.height = `${newHeight}px`;
+          this.resizeOverlay.style.left = `${newX}px`;
+          this.resizeOverlay.style.top = `${newY}px`;
      }
 }
 
