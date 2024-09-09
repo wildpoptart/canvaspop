@@ -1,10 +1,14 @@
 class ImageItem {
      constructor(src, x, y) {
           this.src = src;
+          this.originalImage = new Image();
+          this.originalImage.src = src;
           this.width = Math.round(window.innerWidth * 0.2);  // 20% of window width
           this.height = 0;  // Will be calculated to maintain aspect ratio
           this.canvas = this.createCanvasElement();
-          this.drawImage();
+          this.originalImage.onload = () => {
+               this.drawImage();
+          };
           this.isSelected = false;
           this.dragOffsetX = 0;
           this.dragOffsetY = 0;
@@ -59,24 +63,15 @@ class ImageItem {
      }
 
      drawImage() {
+          const aspectRatio = this.originalImage.width / this.originalImage.height;
+          this.height = Math.round(this.width / aspectRatio);
+
+          this.canvas.width = this.width;
+          this.canvas.height = this.height;
+
           const ctx = this.canvas.getContext('2d');
-          const img = new Image();
-          img.src = this.src;
-          img.onload = () => {
-               // Calculate height to maintain aspect ratio
-               const aspectRatio = img.width / img.height;
-               this.height = Math.round(this.width / aspectRatio);
-
-               // Set canvas size
-               this.canvas.width = this.width;
-               this.canvas.height = this.height;
-
-               // Draw the resized image
-               ctx.drawImage(img, 0, 0, this.width, this.height);
-               // this.x = this.x/2;  // Adjust x to center the image
-               this.y = this.y/2;  // Adjust y to center the image
-               this.updatePosition();
-          };
+          ctx.drawImage(this.originalImage, 0, 0, this.width, this.height);
+          this.updatePosition();
      }
 
      addEventListeners() {
@@ -190,18 +185,13 @@ class ImageItem {
           });
      }
 
-     resize() {
-          this.width = Math.round(window.innerWidth * 0.2);
-          this.drawImage();
-     }
-
      initCropMode() {
           ImageItem.isCroppingActive = true;
           this.isCropMode = true;
-          
+
           // Store the current z-index
           this.originalZIndex = this.zIndex;
-          
+
           // Set a high z-index for the image and crop overlay
           const highZIndex = ImageItem.instances.length + 1;
           this.setZIndex(highZIndex);
@@ -231,8 +221,8 @@ class ImageItem {
           this.canvas.parentNode.appendChild(this.cropOverlay);
 
           // Align the crop overlay with the image, accounting for the canvas position
-          this.cropOverlay.style.left = `${this.x-1}px`;
-          this.cropOverlay.style.top = `${this.y-1}px`;
+          this.cropOverlay.style.left = `${this.x - 1}px`;
+          this.cropOverlay.style.top = `${this.y - 1}px`;
           this.cropOverlay.style.width = `${this.width}px`;
           this.cropOverlay.style.height = `${this.height}px`;
 
@@ -299,7 +289,7 @@ class ImageItem {
           if (this.isCropDragging) {
                const newLeft = e.clientX - this.cropDragStartX;
                const newTop = e.clientY - this.cropDragStartY;
-               
+
                this.cropOverlay.style.left = `${Math.max(this.x, Math.min(newLeft, this.x + this.width - parseInt(this.cropOverlay.style.width)))}px`;
                this.cropOverlay.style.top = `${Math.max(this.y, Math.min(newTop, this.y + this.height - parseInt(this.cropOverlay.style.height)))}px`;
           } else if (this.isResizing) {
@@ -392,23 +382,37 @@ class ImageItem {
           const cropWidth = parseInt(this.cropOverlay.style.width);
           const cropHeight = parseInt(this.cropOverlay.style.height);
 
-          const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = cropWidth;
-          tempCanvas.height = cropHeight;
-          const tempCtx = tempCanvas.getContext('2d');
+          // Calculate the crop area in the original image coordinates
+          const scaleX = this.originalImage.width / this.width;
+          const scaleY = this.originalImage.height / this.height;
+          const originalCropX = Math.round(cropX * scaleX);
+          const originalCropY = Math.round(cropY * scaleY);
+          const originalCropWidth = Math.round(cropWidth * scaleX);
+          const originalCropHeight = Math.round(cropHeight * scaleY);
 
-          tempCtx.drawImage(
-               this.canvas,
-               cropX, cropY, cropWidth, cropHeight,
+          // Create a new canvas for the cropped image
+          const croppedCanvas = document.createElement('canvas');
+          croppedCanvas.width = cropWidth;
+          croppedCanvas.height = cropHeight;
+          const ctx = croppedCanvas.getContext('2d');
+
+          // Draw the cropped portion of the original image onto the new canvas
+          ctx.drawImage(
+               this.originalImage,
+               originalCropX, originalCropY, originalCropWidth, originalCropHeight,
                0, 0, cropWidth, cropHeight
           );
 
+          // Update the original image with the cropped version
+          this.originalImage.src = croppedCanvas.toDataURL();
           this.width = cropWidth;
           this.height = cropHeight;
-          this.canvas.width = cropWidth;
-          this.canvas.height = cropHeight;
-          const ctx = this.canvas.getContext('2d');
-          ctx.drawImage(tempCanvas, 0, 0);
+
+          // Redraw the image on the main canvas
+          this.canvas.width = this.width;
+          this.canvas.height = this.height;
+          const mainCtx = this.canvas.getContext('2d');
+          mainCtx.drawImage(croppedCanvas, 0, 0);
 
           this.exitCropMode();
           this.updatePosition();
@@ -422,7 +426,7 @@ class ImageItem {
                this.cropOverlay.remove();
                this.cropOverlay = null;
           }
-          
+
           // Restore all buttons in the secondary toolbar except crop confirm and cancel
           const secondaryToolbar = document.getElementById('secondary-toolbar');
           Array.from(secondaryToolbar.children).forEach(button => {

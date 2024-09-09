@@ -83,19 +83,20 @@ function handleDropAreaClick(e) {
 
 // Resize drop area to window size
 function resizeDropArea() {
+    const toolbarContainer = document.getElementById('toolbar-container');
+    const toolbarHeight = toolbarContainer.offsetHeight;
     dropArea.style.width = `${window.innerWidth}px`;
-    dropArea.style.height = `${window.innerHeight}px`;
-    dropArea.style.top = `${45}px`;
-    console.log(dropArea.style.height);
+    dropArea.style.height = `${window.innerHeight - toolbarHeight}px`;
+    dropArea.style.top = `${toolbarHeight}px`;
 }
 
 // Make sure to call this function on window resize and initial load
 window.addEventListener('resize', resizeDropArea);
 resizeDropArea(); // Initial call to set the size
 
-window.addEventListener('resize', () => {
-    ImageItem.instances.forEach(image => image.resize());
-});
+// window.addEventListener('resize', () => {
+//     ImageItem.instances.forEach(image => image.resize());
+// });
 
 // Update these lines to match the new HTML structure
 const moveUpBtn = document.querySelector('#secondary-toolbar .tool-btn[title="Move Up"]');
