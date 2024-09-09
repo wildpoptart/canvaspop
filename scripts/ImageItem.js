@@ -24,6 +24,7 @@ class ImageItem {
           this.isCropResizing = false;  // Add this new variable
           this.originalWidth = this.width;
           this.originalHeight = this.height;
+          this.rotation = 0; // Add this line to store the rotation angle
      }
 
      static getMaxZIndex() {
@@ -143,6 +144,7 @@ class ImageItem {
                this.resizeOverlay.style.left = `${this.x}px`;
                this.resizeOverlay.style.top = `${this.y}px`;
           }
+          this.applyRotation(); // Add this line to ensure rotation is maintained
      }
 
      select() {
@@ -551,6 +553,26 @@ class ImageItem {
                this.resizeOverlay.appendChild(handle);
           });
           
+          // Add rotation handle
+          const rotateHandle = document.createElement('div');
+          rotateHandle.className = 'resize-handle rotate';
+          rotateHandle.style.top = '-30px'; // Position it above the north handle
+          rotateHandle.style.left = '50%';
+          rotateHandle.style.transform = 'translateX(-50%)';
+          this.resizeOverlay.appendChild(rotateHandle);
+
+          // Add visual line connecting rotation handle to north handle
+          const connectingLine = document.createElement('div');
+          connectingLine.className = 'rotate-connecting-line';
+          connectingLine.style.position = 'absolute';
+          connectingLine.style.width = '2px';
+          connectingLine.style.backgroundColor = '#007bff';
+          connectingLine.style.top = '-28px'; // Adjust based on rotate handle position
+          connectingLine.style.left = '50%';
+          connectingLine.style.transform = 'translateX(-50%)';
+          connectingLine.style.height = '28px'; // Height from north handle to rotate handle
+          this.resizeOverlay.appendChild(connectingLine);
+
           this.canvas.parentNode.appendChild(this.resizeOverlay);
           this.addResizeEventListeners();
 
@@ -561,6 +583,9 @@ class ImageItem {
           this.resizeOverlay.addEventListener('mousedown', this.onResizeStart.bind(this));
           document.addEventListener('mousemove', this.onResizeMove.bind(this));
           document.addEventListener('mouseup', this.onResizeEnd.bind(this));
+
+          const rotateHandle = this.resizeOverlay.querySelector('.resize-handle.rotate');
+          rotateHandle.addEventListener('mousedown', this.onRotateStart.bind(this));
      }
 
      onResizeStart(e) {
@@ -754,6 +779,44 @@ class ImageItem {
           this.resizeOverlay.style.height = `${newHeight}px`;
           this.resizeOverlay.style.left = `${newX}px`;
           this.resizeOverlay.style.top = `${newY}px`;
+     }
+
+     onRotateStart(e) {
+          e.stopPropagation();
+          this.isRotating = true;
+          this.rotateStartAngle = this.getAngle(e.clientX, e.clientY);
+          document.addEventListener('mousemove', this.onRotateMove.bind(this));
+          document.addEventListener('mouseup', this.onRotateEnd.bind(this));
+     }
+
+     onRotateMove(e) {
+          if (this.isRotating) {
+               const currentAngle = this.getAngle(e.clientX, e.clientY);
+               const angleDiff = currentAngle - this.rotateStartAngle;
+               this.rotation += angleDiff;
+               this.rotateStartAngle = currentAngle;
+               this.applyRotation();
+          }
+     }
+
+     onRotateEnd() {
+          this.isRotating = false;
+          document.removeEventListener('mousemove', this.onRotateMove);
+          document.removeEventListener('mouseup', this.onRotateEnd);
+     }
+
+     getAngle(x, y) {
+          const rect = this.canvas.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          return Math.atan2(y - centerY, x - centerX);
+     }
+
+     applyRotation() {
+          this.canvas.style.transform = `rotate(${this.rotation}rad)`;
+          if (this.resizeOverlay) {
+               this.resizeOverlay.style.transform = `rotate(${this.rotation}rad)`;
+          }
      }
 }
 

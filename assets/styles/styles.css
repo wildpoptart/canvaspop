@@ -311,11 +311,33 @@ body {
     border: 1px solid #fff;
 }
 
-.resize-handle.n { top: -7.5px; left: calc(50% - 7.5px); cursor: n-resize; }
+.resize-handle.n { top: -7.5px; left: calc(50% - 7.5px/2); cursor: n-resize; }
 .resize-handle.ne { top: -7.5px; right: -7.5px; cursor: ne-resize; }
-.resize-handle.e { top: calc(50% - 7.5px); right: -7.5px; cursor: e-resize; }
+.resize-handle.e { top: calc(50% - 7.5px/2); right: -7.5px; cursor: e-resize; }
 .resize-handle.se { bottom: -7.5px; right: -7.5px; cursor: se-resize; }
-.resize-handle.s { bottom: -7.5px; left: calc(50% - 7.5px); cursor: s-resize; }
+.resize-handle.s { bottom: -7.5px; left: calc(50% - 7.5px/2); cursor: s-resize; }
 .resize-handle.sw { bottom: -7.5px; left: -7.5px; cursor: sw-resize; }
-.resize-handle.w { top: calc(50% - 7.5px); left: -7.5px; cursor: w-resize; }
+.resize-handle.w { top: calc(50% - 7.5px/2); left: -7.5px; cursor: w-resize; }
 .resize-handle.nw { top: -7.5px; left: -7.5px; cursor: nw-resize; }
+
+.rotate-connecting-line {
+    pointer-events: none; /* Ensures the line doesn't interfere with mouse events */
+}
+
+.resize-handle.rotate {
+    width: 7.5px;
+    height: 7.5px;
+    background-color: #007bff;
+    position: absolute;
+    z-index: 1; /* Ensure the handle appears above the line */
+    cursor: url("../images/rotate_cursor.svg"), auto;
+
+}
+
+.resize-handle.rotate:hover {
+    cursor: url("../images/rotate_cursor.svg"), auto;
+}
+
+.resize-handle.n {
+    z-index: 1; /* Ensure the north handle appears above the line */
+}
