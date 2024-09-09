@@ -1,4 +1,5 @@
 import ImageItem from './ImageItem.js';
+import organizeCollage from './collage.js';
 
 const body = document.body;
 const dropArea = document.getElementById('drop-area');
@@ -222,6 +223,15 @@ function deleteSelected() {
 // Event listeners for the buttons
 clearCanvasBtn.addEventListener('click', clearCanvas);
 deleteSelectedBtn.addEventListener('click', deleteSelected);
+
+// Add this near the other button selections
+const collageBtn = document.querySelector('#toolbar-container .tool-btn[title="Organize Collage"]');
+
+// Add this with the other button event listeners
+collageBtn.addEventListener('click', () => {
+    console.log('Collage button clicked');
+    organizeCollage(Array.from(ImageItem.instances).map(item => item.canvas));
+});
 
 // Export the images array if needed in other parts of your application
 export { images };

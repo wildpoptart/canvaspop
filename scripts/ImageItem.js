@@ -589,6 +589,8 @@ class ImageItem {
                let newLeft = this.resizeStartLeft;
                let newTop = this.resizeStartTop;
 
+               const aspectRatio = this.resizeStartWidth / this.resizeStartHeight;
+
                switch (this.resizeHandle) {
                     case 'n':
                          newHeight -= deltaY;
@@ -606,22 +608,22 @@ class ImageItem {
                          break;
                     case 'ne':
                          newWidth += deltaX;
-                         newHeight -= deltaY;
-                         newTop += deltaY;
+                         newHeight = newWidth / aspectRatio;
+                         newTop = this.resizeStartTop + this.resizeStartHeight - newHeight;
                          break;
                     case 'nw':
                          newWidth -= deltaX;
-                         newHeight -= deltaY;
+                         newHeight = newWidth / aspectRatio;
                          newLeft += deltaX;
-                         newTop += deltaY;
+                         newTop = this.resizeStartTop + this.resizeStartHeight - newHeight;
                          break;
                     case 'se':
                          newWidth += deltaX;
-                         newHeight += deltaY;
+                         newHeight = newWidth / aspectRatio;
                          break;
                     case 'sw':
                          newWidth -= deltaX;
-                         newHeight += deltaY;
+                         newHeight = newWidth / aspectRatio;
                          newLeft += deltaX;
                          break;
                }
@@ -629,6 +631,11 @@ class ImageItem {
                // Apply constraints (minimum size)
                newWidth = Math.max(20, newWidth);
                newHeight = Math.max(20, newHeight);
+
+               // Ensure the image stays within the drop area
+               const dropArea = document.getElementById('drop-area');
+               newLeft = Math.max(0, Math.min(newLeft, dropArea.clientWidth - newWidth));
+               newTop = Math.max(0, Math.min(newTop, dropArea.clientHeight - newHeight));
 
                this.updateSize(newWidth, newHeight);
                this.x = newLeft;
