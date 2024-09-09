@@ -539,6 +539,8 @@ class ImageItem {
           this.resizeOverlay.style.cursor = 'move';
           this.resizeOverlay.style.zIndex = this.zIndex;
           
+          this.resizeOverlay.style.transform = `rotate(${this.rotation}rad)`;
+
           // Align the resize overlay with the image
           this.resizeOverlay.style.left = `${this.x}px`;
           this.resizeOverlay.style.top = `${this.y}px`;
@@ -559,6 +561,7 @@ class ImageItem {
           rotateHandle.style.top = '-30px'; // Position it above the north handle
           rotateHandle.style.left = '50%';
           rotateHandle.style.transform = 'translateX(-50%)';
+          rotateHandle.style.cursor = 'grab';
           this.resizeOverlay.appendChild(rotateHandle);
 
           // Add visual line connecting rotation handle to north handle

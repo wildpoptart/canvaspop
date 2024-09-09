@@ -330,12 +330,11 @@ body {
     background-color: #007bff;
     position: absolute;
     z-index: 1; /* Ensure the handle appears above the line */
-    cursor: url("../images/rotate_cursor.svg"), auto;
-
+    cursor: grab;
 }
 
 .resize-handle.rotate:hover {
-    cursor: url("../images/rotate_cursor.svg"), auto;
+    cursor: grab;
 }
 
 .resize-handle.n {
