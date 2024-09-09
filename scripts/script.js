@@ -42,6 +42,13 @@ function handleDrop(e) {
     const files = dt.files;
 
     handleFiles(files, e.clientX, e.clientY);
+
+    // Show the clear canvas button when an image is added
+    clearCanvasBtn.style.display = 'inline-block';
+
+    // Hide the drop text
+    const dropText = document.getElementById('drop-text');
+    if (dropText) dropText.style.display = 'none';
 }
 
 function handleFiles(files, x, y) {
@@ -157,6 +164,64 @@ magicWandBtn.addEventListener('click', () => {
         console.log('Magic Wand not implemented yet');
     }
 });
+
+// Get references to the buttons
+const clearCanvasBtn = document.getElementById('clear-canvas-btn');
+const deleteSelectedBtn = document.querySelector('[title="Delete Selected"]');
+
+// Function to clear the entire canvas
+function clearCanvas() {
+    const dropArea = document.getElementById('drop-area');
+    while (dropArea.firstChild) {
+        dropArea.removeChild(dropArea.firstChild);
+    }
+    // Reset the ImageItem instances
+    ImageItem.instances = [];
+    ImageItem.selectedItems = [];
+    
+    // Reset the drop text
+    const dropText = document.createElement('p');
+    dropText.id = 'drop-text';
+    dropText.textContent = 'Drop an image';
+    dropArea.appendChild(dropText);
+    
+    // Hide the clear canvas button
+    clearCanvasBtn.style.display = 'none';
+    
+    // Hide the secondary toolbar
+    ImageItem.hideSecondaryToolbar();
+}
+
+// Function to delete the selected images
+function deleteSelected() {
+    const dropArea = document.getElementById('drop-area');
+    ImageItem.selectedItems.forEach(item => {
+        if (item.canvas && item.canvas.parentNode) {
+            item.canvas.parentNode.removeChild(item.canvas);
+        }
+        if (item.resizeOverlay && item.resizeOverlay.parentNode) {
+            item.resizeOverlay.parentNode.removeChild(item.resizeOverlay);
+        }
+        const index = ImageItem.instances.indexOf(item);
+        if (index > -1) {
+            ImageItem.instances.splice(index, 1);
+        }
+    });
+    
+    ImageItem.selectedItems = [];
+    
+    // If no images left, show the drop text and hide the clear canvas button
+    if (ImageItem.instances.length === 0) {
+        const dropText = document.getElementById('drop-text');
+        if (dropText) dropText.style.display = 'block';
+        clearCanvasBtn.style.display = 'none';
+        ImageItem.hideSecondaryToolbar();
+    }
+}
+
+// Event listeners for the buttons
+clearCanvasBtn.addEventListener('click', clearCanvas);
+deleteSelectedBtn.addEventListener('click', deleteSelected);
 
 // Export the images array if needed in other parts of your application
 export { images };
