@@ -18,6 +18,10 @@ class ImageItem {
           this.addEventListeners();
           this.setZIndex(ImageItem.instances.length + 1);
           this.isCropMode = false;
+          this.isResizeMode = false;
+          this.isCropDragging = false;
+          this.isResizing = false;
+          this.isCropResizing = false;  // Add this new variable
      }
 
      static getMaxZIndex() {
@@ -32,6 +36,9 @@ class ImageItem {
           this.canvas.style.zIndex = this.zIndex;
           if (this.cropOverlay) {
                this.cropOverlay.style.zIndex = this.zIndex;
+          }
+          if (this.resizeOverlay) {
+               this.resizeOverlay.style.zIndex = this.zIndex;
           }
           this.swapZIndex(oldZIndex, this.zIndex);
           ImageItem.updateAllZIndices();
@@ -82,7 +89,7 @@ class ImageItem {
      }
 
      onMouseDown(e) {
-          if (!this.isCropMode && !ImageItem.isCroppingActive) {
+          if (!this.isCropMode && !this.isResizeMode && !ImageItem.isCroppingActive) {
                this.isDragging = true;
                this.dragOffsetX = e.clientX - this.x;
                this.dragOffsetY = e.clientY - this.y;
@@ -91,7 +98,7 @@ class ImageItem {
      }
 
      onMouseMove(e) {
-          if (this.isDragging && !this.isCropMode) {
+          if (this.isDragging && !this.isCropMode && !this.isResizeMode && !ImageItem.isCroppingActive) {
                const dropArea = document.getElementById('drop-area');
                this.x = Math.max(0, Math.min(e.clientX - this.dragOffsetX, dropArea.clientWidth - this.width));
                this.y = Math.max(0, Math.min(e.clientY - this.dragOffsetY, dropArea.clientHeight - this.height));
@@ -100,20 +107,24 @@ class ImageItem {
      }
 
      onMouseUp(e) {
-          console.log(this.isCropMode)
-          if (!this.isCropMode) {
+          if (!this.isCropMode && !this.isResizeMode && !ImageItem.isCroppingActive) {
                this.isDragging = false;
                console.log('Selected items:', ImageItem.selectedItems.length);
           }
      }
 
      onClick(e) {
-          if (!this.isDragging && !ImageItem.isCroppingActive && !this.isCropMode) {
+          if (!this.isDragging && !ImageItem.isCroppingActive && !this.isCropMode && !this.isResizeMode) {
                if (e.shiftKey) {
                     this.toggleSelect();
                } else {
                     ImageItem.deselectAll();
                     this.select();
+                    if (this.isResizeMode) {
+                         this.exitResizeMode();
+                    } else {
+                         this.initResizeMode();
+                    }
                }
           }
           e.stopPropagation();
@@ -123,6 +134,12 @@ class ImageItem {
           this.canvas.style.left = `${this.x}px`;
           this.canvas.style.top = `${this.y}px`;
           this.canvas.style.zIndex = this.zIndex;  // Set the z-index
+
+          // Update resize overlay position if it exists
+          if (this.resizeOverlay) {
+               this.resizeOverlay.style.left = `${this.x}px`;
+               this.resizeOverlay.style.top = `${this.y}px`;
+          }
      }
 
      select() {
@@ -145,6 +162,7 @@ class ImageItem {
           if (ImageItem.selectedItems.length === 0) {
                ImageItem.hideSecondaryToolbar();
           }
+          this.exitResizeMode(); // Add this line to remove resize overlay when deselecting
           console.log('Selected items:', ImageItem.selectedItems.length);
      }
 
@@ -158,7 +176,10 @@ class ImageItem {
 
      static deselectAll() {
           if (!ImageItem.isCroppingActive) {
-               ImageItem.selectedItems.forEach(item => item.deselect());
+               ImageItem.selectedItems.forEach(item => {
+                    item.deselect();
+                    item.exitResizeMode(); // Ensure resize mode is exited for all items
+               });
                ImageItem.selectedItems = [];
                ImageItem.hideSecondaryToolbar();
           }
@@ -166,7 +187,7 @@ class ImageItem {
 
      updateSelectionStyle() {
           if (this.isSelected) {
-               this.canvas.style.outline = '3px solid #007bff';
+               this.canvas.style.outline = '1px solid #007bff';
           } else {
                this.canvas.style.outline = 'none';
           }
@@ -186,8 +207,13 @@ class ImageItem {
      }
 
      initCropMode() {
-          ImageItem.isCroppingActive = true;
+          if (this.isResizeMode) {
+               this.exitResizeMode();
+          }
+          this.wasInResizeMode = this.isResizeMode; // Store the resize mode state
           this.isCropMode = true;
+          
+          ImageItem.isCroppingActive = true;
 
           // Store the current z-index
           this.originalZIndex = this.zIndex;
@@ -231,6 +257,10 @@ class ImageItem {
           handles.forEach(position => {
                const handle = document.createElement('div');
                handle.className = `crop-handle ${position}`;
+               handle.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    this.onCropResizeStart(e, position);
+               });
                this.cropOverlay.appendChild(handle);
           });
 
@@ -268,112 +298,125 @@ class ImageItem {
           document.addEventListener('mousemove', this.onCropMouseMove.bind(this));
           document.addEventListener('mouseup', this.onCropMouseUp.bind(this));
 
-          // Add listeners for resize handles
-          const handles = this.cropOverlay.querySelectorAll('.crop-handle');
-          handles.forEach(handle => {
-               handle.addEventListener('mousedown', (e) => {
-                    e.stopPropagation();
-                    this.onResizeStart(e);
-               });
-          });
+          // Remove the separate listeners for resize handles
      }
 
      onCropMouseDown(e) {
-          e.stopPropagation();
-          this.isCropDragging = true;
-          this.cropDragStartX = e.clientX - this.cropOverlay.offsetLeft;
-          this.cropDragStartY = e.clientY - this.cropOverlay.offsetTop;
-     }
-
-     onCropMouseMove(e) {
-          if (this.isCropDragging) {
-               const newLeft = e.clientX - this.cropDragStartX;
-               const newTop = e.clientY - this.cropDragStartY;
-
-               this.cropOverlay.style.left = `${Math.max(this.x, Math.min(newLeft, this.x + this.width - parseInt(this.cropOverlay.style.width)))}px`;
-               this.cropOverlay.style.top = `${Math.max(this.y, Math.min(newTop, this.y + this.height - parseInt(this.cropOverlay.style.height)))}px`;
-          } else if (this.isResizing) {
-               const deltaX = e.clientX - this.resizeStartX;
-               const deltaY = e.clientY - this.resizeStartY;
-
-               let newWidth = this.resizeStartWidth;
-               let newHeight = this.resizeStartHeight;
-               let newLeft = this.cropOverlay.offsetLeft;
-               let newTop = this.cropOverlay.offsetTop;
-
-               switch (this.resizeHandle) {
-                    case 'n':
-                         newHeight -= deltaY;
-                         newTop += deltaY;
-                         break;
-                    case 's':
-                         newHeight += deltaY;
-                         break;
-                    case 'e':
-                         newWidth += deltaX;
-                         break;
-                    case 'w':
-                         newWidth -= deltaX;
-                         newLeft += deltaX;
-                         break;
-                    case 'ne':
-                         newWidth += deltaX;
-                         newHeight -= deltaY;
-                         newTop += deltaY;
-                         break;
-                    case 'nw':
-                         newWidth -= deltaX;
-                         newHeight -= deltaY;
-                         newLeft += deltaX;
-                         newTop += deltaY;
-                         break;
-                    case 'se':
-                         newWidth += deltaX;
-                         newHeight += deltaY;
-                         break;
-                    case 'sw':
-                         newWidth -= deltaX;
-                         newHeight += deltaY;
-                         newLeft += deltaX;
-                         break;
+          if (this.isCropMode) {
+               e.stopPropagation();
+               // Check if the click is on a resize handle
+               if (e.target.classList.contains('crop-handle')) {
+                    // If it's a resize handle, we start resizing
+                    this.isCropDragging = false;
+                    this.isCropResizing = true;
+                    this.onCropResizeStart(e);
+               } else {
+                    // If it's not a resize handle, we start dragging
+                    this.isCropDragging = true;
+                    this.isCropResizing = false;
+                    this.cropDragStartX = e.clientX - this.cropOverlay.offsetLeft;
+                    this.cropDragStartY = e.clientY - this.cropOverlay.offsetTop;
                }
-
-               // Apply constraints
-               newWidth = Math.max(20, Math.min(newWidth, this.x + this.width - newLeft));
-               newHeight = Math.max(20, Math.min(newHeight, this.y + this.height - newTop));
-               newLeft = Math.max(this.x, Math.min(newLeft, this.x + this.width - 20));
-               newTop = Math.max(this.y, Math.min(newTop, this.y + this.height - 20));
-
-               // Ensure the crop overlay doesn't exceed image boundaries
-               if (newLeft + newWidth > this.x + this.width) {
-                    newWidth = this.x + this.width - newLeft;
-               }
-               if (newTop + newHeight > this.y + this.height) {
-                    newHeight = this.y + this.height - newTop;
-               }
-
-               // Update crop overlay size and position
-               this.cropOverlay.style.width = `${newWidth}px`;
-               this.cropOverlay.style.height = `${newHeight}px`;
-               this.cropOverlay.style.left = `${newLeft}px`;
-               this.cropOverlay.style.top = `${newTop}px`;
           }
      }
 
+     onCropMouseMove(e) {
+          if (this.isCropMode) {  // Only proceed if in crop mode
+               if (this.isCropDragging) {
+                    const newLeft = e.clientX - this.cropDragStartX;
+                    const newTop = e.clientY - this.cropDragStartY;
+                    
+                    this.cropOverlay.style.left = `${Math.max(this.x, Math.min(newLeft, this.x + this.width - parseInt(this.cropOverlay.style.width)))}px`;
+                    this.cropOverlay.style.top = `${Math.max(this.y, Math.min(newTop, this.y + this.height - parseInt(this.cropOverlay.style.height)))}px`;
+               } else if (this.isCropResizing) {
+                    const deltaX = e.clientX - this.resizeStartX;
+                    const deltaY = e.clientY - this.resizeStartY;
+
+                    let newWidth = this.resizeStartWidth;
+                    let newHeight = this.resizeStartHeight;
+                    let newLeft = this.resizeStartLeft;
+                    let newTop = this.resizeStartTop;
+
+                    switch (this.resizeHandle) {
+                         case 'n':
+                              newHeight -= deltaY;
+                              newTop += deltaY;
+                              break;
+                         case 's':
+                              newHeight += deltaY;
+                              break;
+                         case 'e':
+                              newWidth += deltaX;
+                              break;
+                         case 'w':
+                              newWidth -= deltaX;
+                              newLeft += deltaX;
+                              break;
+                         case 'ne':
+                              newWidth += deltaX;
+                              newHeight -= deltaY;
+                              newTop += deltaY;
+                              break;
+                         case 'nw':
+                              newWidth -= deltaX;
+                              newHeight -= deltaY;
+                              newLeft += deltaX;
+                              newTop += deltaY;
+                              break;
+                         case 'se':
+                              newWidth += deltaX;
+                              newHeight += deltaY;
+                              break;
+                         case 'sw':
+                              newWidth -= deltaX;
+                              newHeight += deltaY;
+                              newLeft += deltaX;
+                              break;
+                    }
+
+                    // Apply constraints
+                    newWidth = Math.max(20, Math.min(newWidth, this.x + this.width - newLeft));
+                    newHeight = Math.max(20, Math.min(newHeight, this.y + this.height - newTop));
+                    newLeft = Math.max(this.x, Math.min(newLeft, this.x + this.width - 20));
+                    newTop = Math.max(this.y, Math.min(newTop, this.y + this.height - 20));
+
+                    // Ensure the crop overlay doesn't exceed image boundaries
+                    if (newLeft + newWidth > this.x + this.width) {
+                         newWidth = this.x + this.width - newLeft;
+                    }
+                    if (newTop + newHeight > this.y + this.height) {
+                         newHeight = this.y + this.height - newTop;
+                    }
+
+                    // Update crop overlay size and position
+                    this.cropOverlay.style.width = `${newWidth}px`;
+                    this.cropOverlay.style.height = `${newHeight}px`;
+                    this.cropOverlay.style.left = `${newLeft}px`;
+                    this.cropOverlay.style.top = `${newTop}px`;
+               }
+          }
+     }
      onCropMouseUp(e) {
-          e.stopPropagation();
-          this.isCropDragging = false;
-          this.isResizing = false;
+          if (this.isCropMode) {
+               e.stopPropagation();
+               this.isCropDragging = false;
+               this.isCropResizing = false;
+          }
      }
 
-     onResizeStart(e) {
-          this.isResizing = true;
-          this.resizeHandle = e.target.className.split(' ')[1]; // Get handle position (nw, ne, sw, se)
-          this.resizeStartX = e.clientX;
-          this.resizeStartY = e.clientY;
-          this.resizeStartWidth = parseInt(this.cropOverlay.style.width);
-          this.resizeStartHeight = parseInt(this.cropOverlay.style.height);
-          e.stopPropagation();
+     onCropResizeStart(e) {
+          if (this.isCropMode) {
+               this.isCropResizing = true;
+               this.isCropDragging = false;
+               this.resizeHandle = e.target.className.split(' ')[1];
+               this.resizeStartX = e.clientX;
+               this.resizeStartY = e.clientY;
+               this.resizeStartWidth = parseInt(this.cropOverlay.style.width);
+               this.resizeStartHeight = parseInt(this.cropOverlay.style.height);
+               this.resizeStartLeft = this.cropOverlay.offsetLeft;
+               this.resizeStartTop = this.cropOverlay.offsetTop;
+               e.stopPropagation();
+          }
      }
 
      confirmCrop() {
@@ -420,13 +463,13 @@ class ImageItem {
      }
 
      exitCropMode() {
-          ImageItem.isCroppingActive = false;
           this.isCropMode = false;
+          ImageItem.isCroppingActive = false;
           if (this.cropOverlay) {
                this.cropOverlay.remove();
                this.cropOverlay = null;
           }
-
+          
           // Restore all buttons in the secondary toolbar except crop confirm and cancel
           const secondaryToolbar = document.getElementById('secondary-toolbar');
           Array.from(secondaryToolbar.children).forEach(button => {
@@ -444,6 +487,11 @@ class ImageItem {
           this.setZIndex(this.originalZIndex);
 
           this.restoreSelectionStyle();
+
+          // Reinitialize resize mode if it was active before
+          if (this.wasInResizeMode) {
+               this.initResizeMode();
+          }
      }
 
      restoreSelectionStyle() {
@@ -451,7 +499,10 @@ class ImageItem {
           if (this.previousOutline !== undefined) {
                this.canvas.style.outline = this.previousOutline;
                this.previousOutline = undefined;
+               this.initResizeMode();
           }
+          // Restore the resize overlay and its event listeners
+
      }
 
      static showSecondaryToolbar() {
@@ -470,6 +521,150 @@ class ImageItem {
           mainToolbar.style.visibility = 'visible';
           mainToolbar.style.pointerEvents = 'auto';
           secondaryToolbar.classList.remove('visible');
+     }
+
+     initResizeMode() {
+          this.isResizeMode = true;
+          
+          this.resizeOverlay = document.createElement('div');
+          this.resizeOverlay.className = 'resize-overlay';
+          this.resizeOverlay.style.position = 'absolute';
+          this.resizeOverlay.style.border = '2px solid #007bff';
+          this.resizeOverlay.style.boxSizing = 'border-box';
+          this.resizeOverlay.style.cursor = 'move';
+          this.resizeOverlay.style.zIndex = this.zIndex;
+          
+          // Align the resize overlay with the image
+          this.resizeOverlay.style.left = `${this.x}px`;
+          this.resizeOverlay.style.top = `${this.y}px`;
+          this.resizeOverlay.style.width = `${this.width}px`;
+          this.resizeOverlay.style.height = `${this.height}px`;
+          
+          // Add resize handles
+          const handles = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
+          handles.forEach(position => {
+               const handle = document.createElement('div');
+               handle.className = `resize-handle ${position}`;
+               this.resizeOverlay.appendChild(handle);
+          });
+          
+          this.canvas.parentNode.appendChild(this.resizeOverlay);
+          this.addResizeEventListeners();
+     }
+
+     addResizeEventListeners() {
+          this.resizeOverlay.addEventListener('mousedown', this.onResizeStart.bind(this));
+          document.addEventListener('mousemove', this.onResizeMove.bind(this));
+          document.addEventListener('mouseup', this.onResizeEnd.bind(this));
+     }
+
+     onResizeStart(e) {
+          if (e.target.classList.contains('resize-handle')) {
+               this.isResizing = true;
+               this.resizeHandle = e.target.classList[1]; // Get handle position (n, ne, e, se, s, sw, w, nw)
+               this.resizeStartX = e.clientX;
+               this.resizeStartY = e.clientY;
+               this.resizeStartWidth = this.width;
+               this.resizeStartHeight = this.height;
+               this.resizeStartLeft = this.x;
+               this.resizeStartTop = this.y;
+          } else {
+               // Handle dragging of the entire image
+               this.isDragging = true;
+               this.dragOffsetX = e.clientX - this.x;
+               this.dragOffsetY = e.clientY - this.y;
+          }
+          e.stopPropagation();
+     }
+
+     onResizeMove(e) {
+          if (this.isResizing) {
+               const deltaX = e.clientX - this.resizeStartX;
+               const deltaY = e.clientY - this.resizeStartY;
+
+               let newWidth = this.resizeStartWidth;
+               let newHeight = this.resizeStartHeight;
+               let newLeft = this.resizeStartLeft;
+               let newTop = this.resizeStartTop;
+
+               switch (this.resizeHandle) {
+                    case 'n':
+                         newHeight -= deltaY;
+                         newTop += deltaY;
+                         break;
+                    case 's':
+                         newHeight += deltaY;
+                         break;
+                    case 'e':
+                         newWidth += deltaX;
+                         break;
+                    case 'w':
+                         newWidth -= deltaX;
+                         newLeft += deltaX;
+                         break;
+                    case 'ne':
+                         newWidth += deltaX;
+                         newHeight -= deltaY;
+                         newTop += deltaY;
+                         break;
+                    case 'nw':
+                         newWidth -= deltaX;
+                         newHeight -= deltaY;
+                         newLeft += deltaX;
+                         newTop += deltaY;
+                         break;
+                    case 'se':
+                         newWidth += deltaX;
+                         newHeight += deltaY;
+                         break;
+                    case 'sw':
+                         newWidth -= deltaX;
+                         newHeight += deltaY;
+                         newLeft += deltaX;
+                         break;
+               }
+
+               // Apply constraints (minimum size)
+               newWidth = Math.max(20, newWidth);
+               newHeight = Math.max(20, newHeight);
+
+               this.updateSize(newWidth, newHeight);
+               this.x = newLeft;
+               this.y = newTop;
+               this.updatePosition();
+          } else if (this.isDragging) {
+               // Handle dragging of the entire image
+               const dropArea = document.getElementById('drop-area');
+               this.x = Math.max(0, Math.min(e.clientX - this.dragOffsetX, dropArea.clientWidth - this.width));
+               this.y = Math.max(0, Math.min(e.clientY - this.dragOffsetY, dropArea.clientHeight - this.height));
+               this.updatePosition();
+          }
+     }
+
+     onResizeEnd() {
+          this.isResizing = false;
+          this.isDragging = false;
+     }
+
+     updateSize(newWidth, newHeight) {
+          this.width = newWidth;
+          this.height = newHeight;
+          this.canvas.width = newWidth;
+          this.canvas.height = newHeight;
+
+          const ctx = this.canvas.getContext('2d');
+          ctx.drawImage(this.originalImage, 0, 0, newWidth, newHeight);
+
+          this.resizeOverlay.style.width = `${newWidth}px`;
+          this.resizeOverlay.style.height = `${newHeight}px`;
+     }
+
+     exitResizeMode() {
+          this.isResizeMode = false;
+          if (this.resizeOverlay) {
+               this.resizeOverlay.remove();
+               this.resizeOverlay = null;
+          }
      }
 }
 

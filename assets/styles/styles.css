@@ -135,20 +135,20 @@ body {
 }
 
 .crop-handle.nw, .crop-handle.se, .crop-handle.ne, .crop-handle.sw {
-    width: 10px;
-    height: 10px;
+    width: 7.5px;
+    height: 7.5px;
 }
 
 .crop-handle.n, .crop-handle.s {
-    width: 10px;
-    height: 10px;
-    left: calc(50% - 10px);
+    width: 7.5px;
+    height: 7.5px;
+    left: calc(50% - 7.5px);
 }
 
 .crop-handle.e, .crop-handle.w {
-    width: 10px;
-    height: 10px;
-    top: calc(50% - 10px);
+    width: 7.5px;
+    height: 7.5px;
+    top: calc(50% - 7.5px);
 }
 
 .crop-handle.nw { top: -7.5px; left: -7.5px; cursor: nw-resize; }
@@ -299,3 +299,27 @@ body {
 }
 
 /* Update the showSecondaryToolbar and hideSecondaryToolbar methods in ImageItem.js */
+
+.resize-overlay {
+    position: absolute;
+    border: 1.5px solid #007bff;
+    box-sizing: border-box;
+    cursor: move;
+}
+
+.resize-handle {
+    position: absolute;
+    width: 7.5px;
+    height: 7.5px;
+    background-color: #007bff;
+    border: 1px solid #fff;
+}
+
+.resize-handle.n { top: -7.5px; left: calc(50% - 7.5px); cursor: n-resize; }
+.resize-handle.ne { top: -7.5px; right: -7.5px; cursor: ne-resize; }
+.resize-handle.e { top: calc(50% - 7.5px); right: -7.5px; cursor: e-resize; }
+.resize-handle.se { bottom: -7.5px; right: -7.5px; cursor: se-resize; }
+.resize-handle.s { bottom: -7.5px; left: calc(50% - 7.5px); cursor: s-resize; }
+.resize-handle.sw { bottom: -7.5px; left: -7.5px; cursor: sw-resize; }
+.resize-handle.w { top: calc(50% - 7.5px); left: -7.5px; cursor: w-resize; }
+.resize-handle.nw { top: -7.5px; left: -7.5px; cursor: nw-resize; }
