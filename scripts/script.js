@@ -1,5 +1,6 @@
 import ImageItem from './ImageItem.js';
 import organizeCollage from './collage.js';
+import TextItem from './textItem.js';
 
 const body = document.body;
 const dropArea = document.getElementById('drop-area');
@@ -95,19 +96,26 @@ function handleDropAreaClick(e) {
             isDraggingDropArea = false;
         }
         ImageItem.deselectAll();
+        TextItem.deselectAll(); // Add this line to deselect TextItems as well
     }
 }
 
-// Add this new function to handle drop area dragging
+// Modify the handleDropAreaDrag function
 function handleDropAreaDrag(e) {
     if (isDraggingDropArea) {
-        const deltaX = (e.clientX - dragStartX);
-        const deltaY = (e.clientY - dragStartY);
+        const deltaX = (e.clientX - dragStartX) / zoomLevel;
+        const deltaY = (e.clientY - dragStartY) / zoomLevel;
 
         ImageItem.instances.forEach(item => {
             item.x += deltaX;
             item.y += deltaY;
             item.updatePosition();
+        });
+
+        TextItem.instances.forEach(item => {
+            item.x += deltaX;
+            item.y += deltaY;
+            item.updateStyle();
         });
 
         dragStartX = e.clientX;
@@ -215,21 +223,25 @@ function clearCanvas() {
     while (dropArea.firstChild) {
         dropArea.removeChild(dropArea.firstChild);
     }
-    // Reset the ImageItem instances
+    // Reset the ImageItem and TextItem instances
     ImageItem.instances = [];
     ImageItem.selectedItems = [];
+    TextItem.instances = [];
+    TextItem.selectedItems = [];
     
     // Reset the drop text
     const dropText = document.createElement('p');
     dropText.id = 'drop-text';
-    dropText.textContent = 'Drop an image';
+    dropText.textContent = 'Drop an image or Text';
+    dropText.style.display = 'block';
     dropArea.appendChild(dropText);
     
     // Hide the clear canvas button
     clearCanvasBtn.style.display = 'none';
     
-    // Hide the secondary toolbar
+    // Hide the secondary toolbar and text toolbar
     ImageItem.hideSecondaryToolbar();
+    TextItem.hideTextToolbar();
 }
 
 // Function to delete the selected images
@@ -284,19 +296,53 @@ document.addEventListener('DOMContentLoaded', () => {
 // Add this function to handle zooming
 // add zoomlevel to the function
         
+let zoomOriginX, zoomOriginY;
+
 function handleZoom(e) {
     e.preventDefault();
     const delta = e.deltaY;
+    const oldZoomLevel = zoomLevel;
+    
     if (delta > 0) {
-        zoomLevel -= ZOOM_SPEED;
+        zoomLevel = Math.max(MIN_ZOOM, zoomLevel - ZOOM_SPEED);
     } else {
-        zoomLevel += ZOOM_SPEED;
+        zoomLevel = Math.min(MAX_ZOOM, zoomLevel + ZOOM_SPEED);
     }
-    zoomLevel = Math.max(MIN_ZOOM, Math.min(zoomLevel, MAX_ZOOM));
+
+    // Calculate zoom origin (mouse position)
+    const rect = dropArea.getBoundingClientRect();
+    zoomOriginX = e.clientX - rect.left;
+    zoomOriginY = e.clientY - rect.top;
+
+    const zoomFactor = zoomLevel / oldZoomLevel;
+
     ImageItem.instances.forEach(item => {
-        item.updatePosition();
-        //update size of item relative to the mouse position
+        // Calculate new position relative to zoom origin
+        const dx = item.x - zoomOriginX;
+        const dy = item.y - zoomOriginY;
+        
+        item.x = zoomOriginX + dx * zoomFactor;
+        item.y = zoomOriginY + dy * zoomFactor;
+        
+        // Update size
         item.updateSizeNoResize(zoomLevel);
+        item.updatePosition();
+    });
+
+    TextItem.instances.forEach(item => {
+        // Calculate new position relative to zoom origin
+        const dx = item.x - zoomOriginX;
+        const dy = item.y - zoomOriginY;
+        
+        item.x = zoomOriginX + dx * zoomFactor;
+        item.y = zoomOriginY + dy * zoomFactor;
+        
+        // Update size and font
+        item.width *= zoomFactor;
+        item.height *= zoomFactor;
+        item.fontSize *= zoomFactor;
+        item.updateStyle();
+        item.renderText();
     });
 }
 
@@ -304,3 +350,90 @@ function handleZoom(e) {
 dropArea.addEventListener('wheel', handleZoom, { passive: false });
 
 // Remove the handleDrag function as it's not needed anymore
+
+function initializeToolbar() {
+    const textButton = document.querySelector('.tool-btn[title="Text"]');
+    textButton.addEventListener('click', addTextItem);
+
+    // Add event listeners for text toolbar buttons
+    const editColorBtn = document.querySelector('#text-toolbar .tool-btn[title="Edit Color"]');
+    const colorPicker = document.getElementById('text-color-picker');
+    const moveUpBtn = document.querySelector('#text-toolbar .tool-btn[title="Move Up"]');
+    const moveDownBtn = document.querySelector('#text-toolbar .tool-btn[title="Move Down"]');
+    const deleteTextBtn = document.querySelector('#text-toolbar .tool-btn[title="Delete Text"]'); // Add this line
+
+    editColorBtn.addEventListener('click', () => {
+        colorPicker.click();
+    });
+
+    colorPicker.addEventListener('input', (e) => {
+        TextItem.selectedItems.forEach(item => item.setColor(e.target.value));
+    });
+
+    moveUpBtn.addEventListener('click', () => {
+        TextItem.selectedItems.forEach(item => item.incrementZIndex());
+        TextItem.updateAllZIndices();
+    });
+
+    moveDownBtn.addEventListener('click', () => {
+        TextItem.selectedItems.forEach(item => item.decrementZIndex());
+        TextItem.updateAllZIndices();
+    });
+
+    // Add this event listener for the delete button
+    deleteTextBtn.addEventListener('click', () => {
+        deleteSelectedTextItems();
+    });
+
+    // ... rest of the existing code ...
+}
+
+function addTextItem() {
+    const dropArea = document.getElementById('drop-area');
+    const x = dropArea.clientWidth / 2;
+    const y = dropArea.clientHeight / 2;
+    const textItem = new TextItem('New Text', x, y);
+    TextItem.instances.push(textItem);
+    textItem.select();
+    textItem.startEditing();
+
+    // Set the initial color of the color picker
+    const colorPicker = document.getElementById('text-color-picker');
+    if (colorPicker) {
+        colorPicker.value = getComputedStyle(document.documentElement).getPropertyValue('--default-text-color').trim();
+    }
+
+    // Hide the drop text
+    hideDropText();
+
+    // Show the clear canvas button
+    const clearCanvasBtn = document.getElementById('clear-canvas-btn');
+    if (clearCanvasBtn) {
+        clearCanvasBtn.style.display = 'inline-block';
+    }
+}
+
+// Add this function to delete selected text items
+function deleteSelectedTextItems() {
+    TextItem.selectedItems.forEach(item => {
+        item.remove();
+        const index = TextItem.instances.indexOf(item);
+        if (index > -1) {
+            TextItem.instances.splice(index, 1);
+        }
+    });
+
+    TextItem.selectedItems = [];
+    TextItem.hideTextToolbar();
+
+    // If no items left, show the drop text and hide the clear canvas button
+    if (TextItem.instances.length === 0 && ImageItem.instances.length === 0) {
+        const dropText = document.getElementById('drop-text');
+        if (dropText) dropText.style.display = 'block';
+        const clearCanvasBtn = document.getElementById('clear-canvas-btn');
+        if (clearCanvasBtn) clearCanvasBtn.style.display = 'none';
+    }
+}
+
+// Make sure to call initializeToolbar() if it's not already being called
+initializeToolbar();

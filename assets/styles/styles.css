@@ -4,6 +4,7 @@
     --text-color: #e0e0e0;
     --border-color: #444;
     --highlight-color: #007bff;
+    --default-text-color: #ffffff;
 }
 
 body {
@@ -99,6 +100,7 @@ body {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+    background-color: #333333; /* Dark background to make white text visible */
 }
 
 .image-canvas {
@@ -108,7 +110,7 @@ body {
 }
 
 .highlight {
-    border-color: var(--highlight-color);
+    /* border-color: var(--highlight-color); */
 }
 
 #drop-text {
@@ -339,4 +341,142 @@ body {
 
 .resize-handle.n {
     z-index: 1; /* Ensure the north handle appears above the line */
+}
+
+.resize-overlay {
+    position: absolute;
+    border: 2px solid #007bff;
+}
+
+.resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: #007bff;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.top-left { top: -5px; left: -5px; cursor: nwse-resize; }
+.top-right { top: -5px; right: -5px; cursor: nesw-resize; }
+.bottom-left { bottom: -5px; left: -5px; cursor: nesw-resize; }
+.bottom-right { bottom: -5px; right: -5px; cursor: nwse-resize; }
+
+.rotate-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: #007bff;
+    border-radius: 50%;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: grab;
+    pointer-events: auto;
+}
+
+.text-toolbar {
+    display: none;
+}
+
+.text-toolbar.visible {
+    display: flex;
+}
+
+/* TextItem specific styles */
+.text-item {
+    position: absolute;
+    user-select: none;
+    cursor: move;
+}
+
+.text-item-resize-overlay {
+    position: absolute;
+    border: 2px solid #007bff;
+    pointer-events: none;
+}
+
+.text-item-resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: #007bff;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.text-item-resize-handle.top-left { top: -5px; left: -5px; cursor: nwse-resize; }
+.text-item-resize-handle.top-right { top: -5px; right: -5px; cursor: nesw-resize; }
+.text-item-resize-handle.bottom-left { bottom: -5px; left: -5px; cursor: nesw-resize; }
+.text-item-resize-handle.bottom-right { bottom: -5px; right: -5px; cursor: nwse-resize; }
+
+.text-item-rotate-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: #007bff;
+    border-radius: 50%;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: grab;
+    pointer-events: auto;
+}
+
+.text-item-editable {
+    position: absolute;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    overflow: hidden;
+    font-family: inherit;
+    color: inherit;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+
+#text-toolbar {
+    background-color: var(--toolbar-bg);
+    padding: 10px;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 3;
+}
+
+#text-toolbar.visible {
+    display: flex;
+}
+
+#text-toolbar .tool-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.2em;
+    margin: 0 10px;
+    cursor: pointer;
+    position: relative;
+}
+
+#text-toolbar .tool-btn:hover {
+    color: var(--highlight-color);
+}
+
+#text-color-picker {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
 }
