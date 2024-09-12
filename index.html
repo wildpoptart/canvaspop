@@ -45,6 +45,24 @@
                <button class="tool-btn" title="Move Down" data-tooltip="Move Down"><i class="fas fa-arrow-down"></i></button>
                <button class="tool-btn" title="Delete Text" data-tooltip="Delete Text"><i class="fas fa-trash"></i></button>
           </div>
+          <div id="collage-toolbar" class="toolbar hidden">
+               <div class="tool-slider" title="Rows" data-tooltip="Rows">
+                    <i class="fas fa-arrows-alt-v"></i>
+                    <input type="range" min="1" max="10" value="1">
+                    <span class="slider-value" id="rows-value">1</span>
+               </div>
+               <div class="tool-slider" title="Columns" data-tooltip="Columns">
+                    <i class="fas fa-arrows-alt-h"></i>
+                    <input type="range" min="1" max="10" value="1">
+                    <span class="slider-value" id="columns-value">1</span>
+               </div>
+               <div class="tool-slider" title="Spacing" data-tooltip="Spacing">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                    <input type="range" min="-50" max="100" value="0">
+                    <span class="slider-value" id="spacing-value">0</span>
+               </div>
+          </div>
+
      </div>
      <div id="drop-area">
           <p id="drop-text">Drop an image or Text</p>

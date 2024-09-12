@@ -281,8 +281,46 @@ const collageBtn = document.querySelector('#toolbar-container .tool-btn[title="O
 // Add this with the other button event listeners
 collageBtn.addEventListener('click', () => {
     console.log('Collage button clicked');
-    organizeCollage(ImageItem.instances);
+    updateCollage(); // Call updateCollage instead of organizeCollage directly
+    
+    // Show the collage toolbar
+    const collageToolbar = document.getElementById('collage-toolbar');
+    if (collageToolbar) {
+        collageToolbar.style.display = 'flex';
+    }
+
+    // Hide the main toolbar
+    const mainToolbar = document.getElementById('main-toolbar');
+    if (mainToolbar) {
+        mainToolbar.style.opacity = '0';
+        mainToolbar.style.visibility = 'hidden';
+        mainToolbar.style.pointerEvents = 'none';
+    }
 });
+
+// Get references to the sliders
+const rowsSlider = document.querySelector('#collage-toolbar .tool-slider[title="Rows"] input');
+const columnsSlider = document.querySelector('#collage-toolbar .tool-slider[title="Columns"] input');
+const spacingSlider = document.querySelector('#collage-toolbar .tool-slider[title="Spacing"] input');
+
+// Add event listeners for the sliders
+rowsSlider.addEventListener('input', updateCollage);
+columnsSlider.addEventListener('input', updateCollage);
+spacingSlider.addEventListener('input', updateCollage);
+
+function updateCollage() {
+    const rows = parseInt(rowsSlider.value);
+    const columns = parseInt(columnsSlider.value);
+    const spacing = parseInt(spacingSlider.value);
+
+    // Update the displayed values
+    document.getElementById('rows-value').textContent = rows;
+    document.getElementById('columns-value').textContent = columns;
+    document.getElementById('spacing-value').textContent = spacing;
+
+    // Call organizeCollage with the new values
+    organizeCollage(ImageItem.instances, rows, columns, spacing);
+}
 
 // Export the images array if needed in other parts of your application
 export { images };
@@ -437,3 +475,31 @@ function deleteSelectedTextItems() {
 
 // Make sure to call initializeToolbar() if it's not already being called
 initializeToolbar();
+
+// Add this function near the top of the file, after the existing imports
+function selectAllItems() {
+    ImageItem.instances.forEach(item => item.select());
+    TextItem.instances.forEach(item => item.select());
+    
+    if (ImageItem.instances.length > 0) {
+        ImageItem.showSecondaryToolbar();
+    } else if (TextItem.instances.length > 0) {
+        TextItem.showTextToolbar();
+    }
+}
+
+// Add this event listener near the bottom of the file, before the initializeToolbar() call
+document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        selectAllItems();
+    }
+});
+
+// Add this event listener for the delete key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        deleteSelected();
+    }
+});

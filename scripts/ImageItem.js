@@ -699,12 +699,12 @@ class ImageItem {
           this.resizeOverlay.style.height = `${newHeight}px`;
      }
 
-     updateSizeNoResize(zoomLevel) {
-          console.log('updateSizeNoResize', zoomLevel);
+     updateSizeNoResize(zoomLevel, scale = 1) {
+          console.log('updateSizeNoResize', zoomLevel, scale);
       
           // Calculate new dimensions
-          const newWidth = Math.max(20, Math.min(this.originalWidth * zoomLevel, window.innerWidth));
-          const newHeight = Math.max(20, Math.min(this.originalHeight * zoomLevel, window.innerHeight));
+          const newWidth = Math.max(20, Math.min(this.originalWidth * zoomLevel * scale, window.innerWidth));
+          const newHeight = Math.max(20, Math.min(this.originalHeight * zoomLevel * scale, window.innerHeight));
       
           // Update image size
           this.width = newWidth;

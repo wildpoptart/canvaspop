@@ -480,3 +480,38 @@ body {
     background: none;
     cursor: pointer;
 }
+
+#collage-toolbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--toolbar-bg);
+}
+
+#collage-toolbar .tool-slider {
+    display: flex;
+    align-items: center;
+    margin: 0 10px;
+}
+
+#collage-toolbar .tool-slider input {
+    width: 100px;
+    margin: 0 10px;
+}
+
+#collage-toolbar .tool-slider span {
+    margin: 0 10px;
+}
+
+#collage-toolbar .tool-slider .slider-value {
+    display: inline-block;
+    width: 30px;
+    text-align: right;
+    margin-left: 5px;
+}
+

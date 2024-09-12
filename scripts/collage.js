@@ -1,52 +1,55 @@
-export default function organizeCollage(imageItems) {
-     const dropArea = document.getElementById('drop-area');
-     const padding = 5; // 5px spacing between images
-     let currentX = padding;
-     let currentY = padding;
-     let rowHeight = 0;
-     let maxWidth = 0;
-     let totalHeight = 0;
+export default function organizeCollage(imageItems, rows = 1, columns = 1, spacing = 5) {
+	const dropArea = document.getElementById('drop-area');
+	const padding = Math.max(spacing, 0);
+	const overlap = Math.abs(Math.min(spacing, 0));
+	let currentX = padding;
+	let currentY = padding;
+	let rowHeight = 0;
+	let maxWidth = 0;
+	let totalHeight = 0;
 
-     // First pass: calculate total width and height
-     imageItems.forEach(item => {
-         if (currentX + item.width > dropArea.clientWidth) {
-             maxWidth = Math.max(maxWidth, currentX - padding);
-             currentX = padding;
-             currentY += rowHeight + padding;
-             rowHeight = 0;
-         }
+	const itemsPerRow = Math.ceil(imageItems.length / rows);
 
-         currentX += item.width + padding;
-         rowHeight = Math.max(rowHeight, item.height);
-     });
-     totalHeight = currentY + rowHeight + padding;
-     maxWidth = Math.max(maxWidth, currentX - padding);
+	// First pass: calculate total width and height
+	imageItems.forEach((item, index) => {
+		if (index % itemsPerRow === 0 && index !== 0) {
+			maxWidth = Math.max(maxWidth, currentX - padding + overlap);
+			currentX = padding;
+			currentY += rowHeight - overlap + padding;
+			rowHeight = 0;
+		}
 
-     // Calculate offsets to center the collage
-     const offsetX = Math.max(0, (dropArea.clientWidth - maxWidth) / 2);
-     const offsetY = Math.max(0, (dropArea.clientHeight - totalHeight) / 2);
+		currentX += item.width - overlap + padding;
+		rowHeight = Math.max(rowHeight, item.height);
+	});
+	totalHeight = currentY + rowHeight - overlap + padding;
+	maxWidth = Math.max(maxWidth, currentX - padding + overlap);
 
-     // Reset for second pass
-     currentX = padding;
-     currentY = padding;
-     rowHeight = 0;
+	// Calculate offsets to center the collage
+	const offsetX = Math.max(0, (dropArea.clientWidth - maxWidth) / 2);
+	const offsetY = Math.max(0, (dropArea.clientHeight - totalHeight) / 2);
 
-     // Second pass: position images
-     imageItems.forEach(item => {
-         if (currentX + item.width > dropArea.clientWidth) {
-             currentX = padding;
-             currentY += rowHeight + padding;
-             rowHeight = 0;
-         }
+	// Reset for second pass
+	currentX = padding;
+	currentY = padding;
+	rowHeight = 0;
 
-         item.x = currentX + offsetX;
-         item.y = currentY + offsetY;
-         item.updatePosition();
+	// Second pass: position images
+	imageItems.forEach((item, index) => {
+		if (index % itemsPerRow === 0 && index !== 0) {
+			currentX = padding;
+			currentY += rowHeight - overlap + padding;
+			rowHeight = 0;
+		}
 
-         currentX += item.width + padding;
-         rowHeight = Math.max(rowHeight, item.height);
-     });
+		item.x = currentX + offsetX;
+		item.y = currentY + offsetY;
+		item.updatePosition();
 
-     // Set drop area height to fit all images
-     dropArea.style.height = `${Math.max(dropArea.clientHeight, totalHeight)}px`;
- }
+		currentX += item.width - overlap + padding;
+		rowHeight = Math.max(rowHeight, item.height);
+	});
+
+	// Set drop area height to fit all images
+	dropArea.style.height = `${Math.max(dropArea.clientHeight, totalHeight)}px`;
+}
