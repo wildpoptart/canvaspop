@@ -759,3 +759,47 @@ function combineImages(selectedItems) {
 
 // Update the combine button visibility when selection changes
 document.addEventListener('selectionchange', updateCombineButtonVisibility);
+
+// Add this near the button selections
+const saveBtn = document.querySelector('#secondary-toolbar .tool-btn[title="Save"]');
+
+// Function to save the selected image
+function saveSelectedImage() {
+    const selectedItems = ImageItem.selectedItems;
+    if (selectedItems.length === 1) {
+        const selectedItem = selectedItems[0];
+        const link = document.createElement('a');
+        link.download = 'saved-image.png';
+        link.href = selectedItem.src;
+        link.click();
+    } else if (selectedItems.length > 1) {
+        alert('Please select only one image to save.');
+    } else {
+        alert('Please select an image to save.');
+    }
+}
+
+// Add event listener for the save button
+saveBtn.addEventListener('click', saveSelectedImage);
+
+// Add event listener for Ctrl+S
+document.addEventListener('keydown', (event) => {
+    if (event.ctrlKey && event.key === 's') {
+        event.preventDefault(); // Prevent the browser's save dialog
+        saveSelectedImage();
+    }
+});
+
+// Update save button visibility based on selection
+function updateSaveButtonVisibility() {
+    // The save button is now part of the secondary toolbar, so we don't need to show/hide it
+    // Instead, we'll rely on the secondary toolbar's visibility
+    if (ImageItem.selectedItems.length === 1) {
+        ImageItem.showSecondaryToolbar();
+    } else {
+        ImageItem.hideSecondaryToolbar();
+    }
+}
+
+// Call this function whenever the selection changes
+document.addEventListener('selectionchange', updateSaveButtonVisibility);
