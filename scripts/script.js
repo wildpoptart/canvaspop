@@ -697,40 +697,45 @@ function updateCombineButtonVisibility() {
 document.addEventListener('selectionchange', updateCombineButtonVisibility);
 
 // Add event listener for the combine button
-combineBtn.addEventListener('click', () => {
+combineBtn.addEventListener('click', async () => {
     const selectedItems = ImageItem.selectedItems;
     if (selectedItems.length > 1) {
-        const { minX, minY } = selectedItems.reduce((acc, item) => ({
-            minX: Math.min(acc.minX, item.x),
-            minY: Math.min(acc.minY, item.y)
-        }), { minX: Infinity, minY: Infinity });
+        const combinedImageSrc = await combineImages(selectedItems);
+        if (combinedImageSrc) {
+            // Find the bounding box to position the new image
+            const { minX, minY } = selectedItems.reduce((acc, item) => ({
+                minX: Math.min(acc.minX, item.x),
+                minY: Math.min(acc.minY, item.y)
+            }), { minX: Infinity, minY: Infinity });
 
-        const combinedImageSrc = combineImages(selectedItems);
-        const newImage = new ImageItem(combinedImageSrc, minX, minY);
-        newImage.setZIndex(Math.max(...selectedItems.map(item => item.zIndex)) + 1);
-        ImageItem.instances.push(newImage);
-        
-        // Remove original items
-        selectedItems.forEach(item => {
-            const index = ImageItem.instances.indexOf(item);
-            if (index > -1) {
-                ImageItem.instances.splice(index, 1);
-            }
-            item.remove(); // Assuming there's a remove method to remove the item from the DOM
-        });
+            const newImage = new ImageItem(combinedImageSrc, minX, minY);
+            newImage.setZIndex(Math.max(...selectedItems.map(item => item.zIndex)) + 1);
+            ImageItem.instances.push(newImage);
 
-        // Select the new combined image
-        newImage.select();
+            // Remove original items from instances and DOM
+            selectedItems.forEach(item => {
+                const index = ImageItem.instances.indexOf(item);
+                if (index > -1) {
+                    ImageItem.instances.splice(index, 1);
+                }
+                item.remove(); // Assuming there's a remove method to remove the item from the DOM
+            });
+
+            // Select the new combined image
+            newImage.select();
+        } else {
+            alert('Failed to combine images. Please try again.');
+        }
     }
 });
 
 // Function to combine images into a single image
-function combineImages(selectedItems) {
+async function combineImages(selectedItems) {
     // Create a canvas to draw the combined image
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
-    // Set canvas size based on the selected images
+    // Calculate the bounding box of all selected images
     const { minX, minY, maxX, maxY } = selectedItems.reduce((acc, item) => {
         acc.minX = Math.min(acc.minX, item.x);
         acc.minY = Math.min(acc.minY, item.y);
@@ -741,20 +746,41 @@ function combineImages(selectedItems) {
 
     const width = maxX - minX;
     const height = maxY - minY;
-    canvas.width = width;
-    canvas.height = height;
+
+    // Handle Device Pixel Ratio for high-DPI displays
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
 
     // Sort items by z-index before drawing
     const sortedItems = selectedItems.sort((a, b) => a.zIndex - b.zIndex);
 
-    // Draw each selected image onto the canvas in order of z-index
-    sortedItems.forEach(item => {
-        const img = new Image();
-        img.src = item.src;
-        ctx.drawImage(img, item.x - minX, item.y - minY, item.width, item.height);
-    });
+    // Load all images and ensure they are ready before drawing
+    const loadImage = (src) => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous'; // Handle CORS if necessary
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = src;
+        });
+    };
 
-    return canvas.toDataURL('image/png');
+    try {
+        const images = await Promise.all(sortedItems.map(item => loadImage(item.src)));
+
+        // Draw each image onto the canvas in order of z-index
+        sortedItems.forEach((item, index) => {
+            const img = images[index];
+            ctx.drawImage(img, item.x - minX, item.y - minY, item.width, item.height);
+        });
+
+        return canvas.toDataURL('image/png');
+    } catch (error) {
+        console.error('Error combining images:', error);
+        return null;
+    }
 }
 
 // Update the combine button visibility when selection changes
