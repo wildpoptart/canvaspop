@@ -109,10 +109,6 @@ body {
     cursor: move;
 }
 
-.highlight {
-    /* border-color: var(--highlight-color); */
-}
-
 #drop-text {
     color: var(--text-color);
     opacity: 0.7;
