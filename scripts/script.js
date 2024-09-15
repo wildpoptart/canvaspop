@@ -1,6 +1,7 @@
 import ImageItem from './ImageItem.js';
 import organizeCollage from './collage.js';
 import TextItem from './textItem.js';
+import removeBackground from './removeBackgroundLocal.js';
 
 const body = document.body;
 const dropArea = document.getElementById('drop-area');
@@ -204,14 +205,79 @@ cloneBtn.addEventListener('click', () => {
 
 // Add magic wand functionality
 const magicWandBtn = document.querySelector('#secondary-toolbar .tool-btn[title="Magic Wand"]');
-magicWandBtn.addEventListener('click', () => {
+magicWandBtn.addEventListener('click', handleMagicWand);
+
+async function handleMagicWand() {
     console.log('Magic Wand button clicked');
-    const selectedItem = ImageItem.selectedItems[0];
-    if (selectedItem) {
-        // Implement magic wand functionality here
-        console.log('Magic Wand not implemented yet');
+    const selectedItems = ImageItem.selectedItems;
+    if (selectedItems.length === 0) {
+        console.log('No items selected');
+        return;
     }
-});
+
+    showLoadingIndicator();
+
+    for (const selectedItem of selectedItems) {
+        try {
+            const imageData = selectedItem.canvas.toDataURL('image/png');
+            const file = dataURLtoFile(imageData, 'image.png');
+
+            // Pass the zoomLevel to the removeBackground function
+            const result = await removeBackground(file);
+
+            const offsetX = 20;
+            const offsetY = 20;
+            const newImage = new ImageItem(result, selectedItem.x + offsetX, selectedItem.y + offsetY);
+            const newZIndex = ImageItem.instances.length + 1;
+            newImage.setZIndex(newZIndex);
+            ImageItem.instances.push(newImage);
+
+            selectedItem.deselect();
+        } catch (error) {
+            console.error('Error processing image:', error);
+        }
+    }
+
+    hideLoadingIndicator();
+    hideDropText();
+}
+
+// Helper function to convert data URL to File object
+function dataURLtoFile(dataurl, filename) {
+    let arr = dataurl.split(','),
+        mime = arr[0].match(/:(.*?);/)[1],
+        bstr = atob(arr[1]),
+        n = bstr.length,
+        u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+}
+
+// Add these functions to show/hide a loading indicator
+function showLoadingIndicator() {
+    const loadingIndicator = document.createElement('div');
+    loadingIndicator.id = 'loading-indicator';
+    loadingIndicator.textContent = 'Processing...';
+    loadingIndicator.style.position = 'fixed';
+    loadingIndicator.style.top = '50%';
+    loadingIndicator.style.left = '50%';
+    loadingIndicator.style.transform = 'translate(-50%, -50%)';
+    loadingIndicator.style.padding = '10px';
+    loadingIndicator.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    loadingIndicator.style.color = 'white';
+    loadingIndicator.style.borderRadius = '5px';
+    loadingIndicator.style.zIndex = '9999';
+    document.body.appendChild(loadingIndicator);
+}
+
+function hideLoadingIndicator() {
+    const loadingIndicator = document.getElementById('loading-indicator');
+    if (loadingIndicator) {
+        loadingIndicator.remove();
+    }
+}
 
 // Get references to the buttons
 const clearCanvasBtn = document.getElementById('clear-canvas-btn');
