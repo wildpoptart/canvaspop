@@ -8,6 +8,7 @@ const dropArea = document.getElementById('drop-area');
 const dropText = document.getElementById('drop-text');
 
 let images = [];
+let copiedItems = []; // Add this near the top of the file
 
 // Add these variables at the top of the file
 let zoomLevel = 1;
@@ -190,6 +191,17 @@ document.addEventListener('keydown', (e) => {
             selectedItem.exitCropMode();
         }
     }
+    else if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        e.preventDefault();
+        copySelectedItems();
+    } else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        e.preventDefault();
+        pasteItems();
+    } else if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+        e.preventDefault();
+        cloneSelectedItems();
+    }
+    // ..
 });
 
 // Add clone functionality
@@ -198,8 +210,7 @@ cloneBtn.addEventListener('click', () => {
     console.log('Clone button clicked');
     const selectedItem = ImageItem.selectedItems[0];
     if (selectedItem) {
-        // Implement clone functionality here
-        console.log('Cloning not implemented yet');
+        cloneSelectedItems();
     }
 });
 
@@ -569,3 +580,107 @@ document.addEventListener('keydown', (e) => {
         deleteSelected();
     }
 });
+
+function copySelectedItems() {
+    copiedItems = [];
+    ImageItem.selectedItems.forEach(item => {
+        copiedItems.push({
+            type: 'image',
+            src: item.src,
+            width: item.width,
+            height: item.height,
+            zIndex: item.zIndex
+        });
+    });
+    TextItem.selectedItems.forEach(item => {
+        copiedItems.push({
+            type: 'text',
+            text: item.text,
+            fontSize: item.fontSize,
+            fontFamily: item.fontFamily,
+            color: item.color,
+            width: item.width,
+            height: item.height,
+            zIndex: item.zIndex
+        });
+    });
+    console.log('Items copied:', copiedItems.length);
+}
+
+function pasteItems(offsetX = 5, offsetY = 5) {
+    copiedItems.forEach(item => {
+        if (item.type === 'image') {
+            const newImage = new ImageItem(item.src, item.x + offsetX, item.y + offsetY);
+            newImage.width = item.width;
+            newImage.height = item.height;
+            newImage.setZIndex(ImageItem.instances.length + 1);
+            ImageItem.instances.push(newImage);
+        } else if (item.type === 'text') {
+            const newText = new TextItem(item.text, item.x + offsetX, item.y + offsetY);
+            newText.fontSize = item.fontSize;
+            newText.fontFamily = item.fontFamily;
+            newText.color = item.color;
+            newText.width = item.width;
+            newText.height = item.height;
+            newText.setZIndex(TextItem.instances.length + 1);
+            TextItem.instances.push(newText);
+        }
+    });
+    hideDropText();
+    updateClearCanvasButtonVisibility();
+}
+
+function cloneSelectedItems(offsetX = -50, offsetY = 10) {
+    const clonedItems = [];
+    ImageItem.selectedItems.forEach(item => {
+        const newImage = new ImageItem(item.src, item.x + item.width + offsetX * zoomLevel, item.y + offsetY);
+        newImage.width = item.width;
+        newImage.height = item.height;
+        newImage.setZIndex(ImageItem.instances.length + 1);
+        ImageItem.instances.push(newImage);
+        clonedItems.push(newImage);
+        
+        // Deselect the original item
+        item.deselect();
+        
+        // Select the new cloned item
+        newImage.select();
+    });
+    TextItem.selectedItems.forEach(item => {
+        const newText = new TextItem(item.text, item.x + offsetX, item.y + offsetY);
+        newText.fontSize = item.fontSize;
+        newText.fontFamily = item.fontFamily;
+        newText.color = item.color;
+        newText.width = item.width;
+        newText.height = item.height;
+        newText.setZIndex(TextItem.instances.length + 1);
+        TextItem.instances.push(newText);
+        clonedItems.push(newText);
+        
+        // Deselect the original item
+        item.deselect();
+        
+        // Select the new cloned item
+        newText.select();
+    });
+    hideDropText();
+    updateClearCanvasButtonVisibility();
+    
+    // Update the secondary toolbar visibility
+    if (clonedItems.length > 0) {
+        if (clonedItems[0] instanceof ImageItem) {
+            ImageItem.showSecondaryToolbar();
+        } else if (clonedItems[0] instanceof TextItem) {
+            TextItem.showTextToolbar();
+        }
+    }
+    
+    return clonedItems;
+}
+
+function updateClearCanvasButtonVisibility() {
+    const clearCanvasBtn = document.getElementById('clear-canvas-btn');
+    if (clearCanvasBtn) {
+        clearCanvasBtn.style.display = (ImageItem.instances.length > 0 || TextItem.instances.length > 0) ? 'inline-block' : 'none';
+    }
+}
